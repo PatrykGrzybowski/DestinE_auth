@@ -1,4 +1,5 @@
 import requests
+import jwt
 from lxml import html
 from urllib.parse import parse_qs, urlparse
 
@@ -28,3 +29,24 @@ class AuthHandler:
         self.dedl_access_token = dedl_auth.get_token()
         
         return self.dedl_access_token
+
+    def get_roles(self,token):
+        decoded_token = jwt.decode(token, options={"verify_signature": False})
+         
+        roles = None
+        if decoded_token['realm_access']['roles']:
+            roles = decoded_token['realm_access']['roles']
+        
+        return roles
+        
+    def is_DTaccess_allowed(self,token):
+        roles=self.get_roles(token)
+
+        is_allowed = False
+        if 'DPAD_Direct_Access' in roles:
+            is_allowed = True
+            print("DT Output access allowed")
+        else:
+            print("DT Output access denied")
+            
+        return is_allowed
