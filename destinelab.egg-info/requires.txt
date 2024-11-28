@@ -1,3 +1,4 @@
 requests
 lxml
 PyJWT
+urllib.parse
