@@ -103,13 +103,6 @@ class DESPAuth:
 
                     # get authorization code
                     auth_code = parse_qs(urlparse(s.post(otp_action,headers={'Content-Type': 'application/x-www-form-urlencoded'},data=otp_data, allow_redirects=False).headers['Location']).query)['code'][0]
-                    auth_request_body= {
-                        "client_id" : CLIENT_ID,
-                        "redirect_uri" : SERVICE_URL,
-                        "code" : auth_code,
-                        "grant_type" : "authorization_code",
-                        "scope" : ""
-                    }
             except:
                 # We expect a 302, a 200 means we got sent back to the login page and there's probably an error message
                 if login.status_code == 200:
@@ -117,24 +110,21 @@ class DESPAuth:
                     error_message = error_message_element[0].strip() if error_message_element else 'Error message not found'
                     raise Exception(error_message)
                     
-                print(login.status_code)
-
                 if login.status_code != 302:
                     raise Exception("Login failed")
                 
                 auth_code = parse_qs(urlparse(login.headers["Location"]).query)['code'][0]
-                auth_request_body= {
+                                
+
+            # Use the auth code to get the token
+            response = requests.post(IAM_URL + "/realms/" + REALM + "/protocol/openid-connect/token",
+                    data = {
                         "client_id" : CLIENT_ID,
                         "redirect_uri" : SERVICE_URL,
                         "code" : auth_code,
                         "grant_type" : "authorization_code",
                         "scope" : ""
                     }
-                                
-
-            # Use the auth code to get the token
-            response = requests.post(IAM_URL + "/realms/" + REALM + "/protocol/openid-connect/token",
-                    data = auth_request_body
                 )
             
             if response.status_code != 200:
