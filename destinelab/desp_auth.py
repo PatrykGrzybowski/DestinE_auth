@@ -45,14 +45,15 @@ class DESPAuth:
                     #print(otp_action)
                     otp_code = input("Please insert OTP code: ")
                     otp_data = "otp=" + otp_code + "&login=Sign+In"
-
                     # get authorization code
-                    auth_code = parse_qs(urlparse(s.post(otp_action,headers={'Content-Type': 'application/x-www-form-urlencoded'},data=otp_data, allow_redirects=False).headers['Location']).query)['code'][0]
+                    auth_code = parse_qs(urlparse(s.post(otp_action,headers={'Content-Type': 'application/x-www-form-urlencoded'},data=otp_data, allow_redirects=False).headers['Location']).query)['code'][0] 
+                else:
+                    raise Exception("OTP login failed.")
             except:
                 # We expect a 302, a 200 means we got sent back to the login page and there's probably an error message
                 if login.status_code == 200:
                     error_message_element = tree.xpath('//span[@id="input-error"]/text()')
-                    error_message = error_message_element[0].strip() if error_message_element else 'Error message not found'
+                    error_message = error_message_element[0].strip() if error_message_element else 'Login failed. Error message not found'
                     raise Exception(error_message)
                     
                 if login.status_code != 302:
