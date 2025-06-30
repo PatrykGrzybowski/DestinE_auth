@@ -1,3 +1,5 @@
+LICENSE
+README.md
 setup.py
 destinelab/__init__.py
 destinelab/climate_dt_dictionary.py
