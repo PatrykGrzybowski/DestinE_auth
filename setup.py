@@ -15,4 +15,5 @@ setup(
         'lxml',
         'PyJWT',
     ],
+    license='MIT',
 )
