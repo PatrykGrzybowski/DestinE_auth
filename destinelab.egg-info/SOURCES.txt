@@ -1,6 +1,7 @@
 LICENSE
 README.md
-setup.py
+pyproject.toml
+setup.cfg
 destinelab/__init__.py
 destinelab/climate_dt_dictionary.py
 destinelab/de_token.py

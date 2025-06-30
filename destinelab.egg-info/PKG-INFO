@@ -1,17 +1,11 @@
 Metadata-Version: 2.4
 Name: destinelab
-Version: 1.11
+Version: 1.12
 License: MIT
 Description-Content-Type: text/markdown
-License-File: LICENSE
 Requires-Dist: requests
 Requires-Dist: lxml
 Requires-Dist: PyJWT
-Dynamic: description
-Dynamic: description-content-type
-Dynamic: license
-Dynamic: license-file
-Dynamic: requires-dist
 
 MIT License
 
