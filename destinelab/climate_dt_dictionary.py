@@ -1072,6 +1072,7 @@ climateDT_params = [
 
 climateDT_scenario = [
 {
+  'class': 'd1',
   'activity': 'ScenarioMIP',
   'experiment': 'ssp3-7.0',
   'model': 'IFS-NEMO',
@@ -1080,6 +1081,7 @@ climateDT_scenario = [
   'dateTo': '12/30/2039'
 },
 {
+  'class': 'd1',
   'activity': 'ScenarioMIP',
   'experiment': 'ssp3-7.0',
   'model': 'ICON',
@@ -1088,6 +1090,7 @@ climateDT_scenario = [
   'dateTo': '09/30/2033'
 },
 {
+  'class': 'd1',
   'activity': 'CMIP6',
   'experiment': 'hist',
   'model': 'IFS-NEMO',
@@ -1096,6 +1099,7 @@ climateDT_scenario = [
   'dateTo': '12/31/1996'
 },
 {
+  'class': 'd1',
   'activity': 'CMIP6',
   'experiment': 'hist',
   'model': 'ICON',
@@ -1104,6 +1108,7 @@ climateDT_scenario = [
   'dateTo': '10/30/2005'
 },
 {
+  'class': 'd1',
   'activity': 'story-nudging',
   'experiment': 'hist',
   'model': 'IFS-FESOM',
@@ -1112,6 +1117,7 @@ climateDT_scenario = [
   'dateTo': '12/31/2023'
 },
 {
+  'class': 'd1',
   'activity': 'story-nudging',
   'experiment': 'cont',
   'model': 'IFS-FESOM',
@@ -1120,11 +1126,49 @@ climateDT_scenario = [
   'dateTo': '12/31/2023'
 },
 {
+  'class': 'd1',
   'activity': 'story-nudging',
   'experiment': 'Tplus2.0K',
   'model': 'IFS-FESOM',
   'resolution': ["high","standard"],
   'dateFrom': '01/01/2017',
   'dateTo': '12/31/2023'
+},
+{
+  'class': 'd1',
+  'activity': 'highresmip',
+  'experiment': 'cont',
+  'model': 'IFS-FESOM',
+  'resolution': ["standard"],
+  'dateFrom': '01/01/1990',
+  'dateTo': '12/31/2004'
+},
+{
+  'class': 'd1',
+  'activity': 'ScenarioMIP',
+  'experiment': 'ssp3-7.0',
+  'model': 'IFS-FESOM',
+  'resolution': ["high","standard"],
+  'dateFrom': '01/01/2020',
+  'dateTo': '12/31/2039'
+},
+{
+  'class': 'ng',
+  'activity': 'CMIP6',
+  'experiment': 'hist',
+  'model': 'IFS-FESOM',
+  'resolution': ["high","standard"],
+  'dateFrom': '01/01/1990',
+  'dateTo': '12/31/2019'
+},
+{
+  'realization': '2',
+  'class': 'd1',
+  'activity': 'ScenarioMIP',
+  'experiment': 'ssp3-7.0',
+  'model': 'IFS-FESOM',
+  'resolution': ["standard"],
+  'dateFrom': '20/01/2020',
+  'dateTo': '12/31/2049'
 }
 ]
