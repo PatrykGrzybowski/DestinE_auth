@@ -1169,6 +1169,6 @@ climateDT_scenario = [
   'model': 'IFS-FESOM',
   'resolution': ["standard"],
   'dateFrom': '20/01/2020',
-  'dateTo': '12/31/2049'
+  'dateTo': '31/12/2049'
 }
 ]
