@@ -30,7 +30,8 @@ dedl_token = handler.get_token()
 ```python
 from destinelab import AuthHandler
 
-handler = AuthHandler("", "")
+handler = AuthHandler("DESP_USERNAME", "DESP_PASSWORD")
+dedl_token = handler.get_token()
 roles = handler.get_roles(dedl_token)
 is_allowed = handler.is_DTaccess_allowed(dedl_token)
 ```
@@ -40,8 +41,15 @@ is_allowed = handler.is_DTaccess_allowed(dedl_token)
 ```python
 from destinelab import DESPAuth, DEDLAuth
 
-desp_token = DESPAuth("DESP_USERNAME", "DESP_PASSWORD").get_token_otp()
-dedl_token = DEDLAuth(desp_token).get_token()
+desp_token = DESPAuth("DESP_USERNAME", "DESP_PASSWORD").get_desp_token()
+dedl_token = DEDLAuth(desp_token, strict=True).get_token()
+
+## Error behavior
+
+- `DESPAuth.get_desp_token()` raises explicit auth errors (for example invalid credentials, OTP required, network failures, and DESP token exchange failures).
+- `DEDLAuth.get_token()` returns `None` by default when exchange fails and logs a warning.
+- `DEDLAuth(..., strict=True).get_token()` raises explicit exceptions instead of returning `None`.
+- `AuthHandler.get_token()` uses the default `DEDLAuth` mode and may therefore return `None` when DEDL exchange fails.
 ```
 
 ## Example script
