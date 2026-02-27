@@ -113,7 +113,7 @@ class TestAuthHandler(unittest.TestCase):
                 self.username = username
                 self.password = password
 
-            def get_token_otp(self):
+            def get_desp_token(self):
                 return "desp-token"
 
         class FakeDEDLAuth:
