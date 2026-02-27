@@ -4,6 +4,7 @@ recursive-include destinelab *.py
 
 prune tests
 prune .github
+prune tokens
 
 exclude .env
 exclude .env.*

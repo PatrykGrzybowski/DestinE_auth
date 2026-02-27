@@ -4,6 +4,8 @@ from datetime import datetime, timezone
 import json
 import getpass
 import os
+from pathlib import Path
+import re
 import sys
 
 import jwt
@@ -26,10 +28,50 @@ def _display_token(token: str, show_full: bool) -> str:
     return _token_preview(token)
 
 
-def _print_decoded_token(token: str, label: str) -> None:
+def _decode_token_payload(token: str):
     try:
-        decoded_token = jwt.decode(token, options={"verify_signature": False})
+        return jwt.decode(token, options={"verify_signature": False})
     except (jwt.PyJWTError, TypeError, ValueError):
+        return None
+
+
+def _file_safe_user_string(user_string: str) -> str:
+    normalized = (user_string or "").strip().lower()
+    normalized = re.sub(r"[^a-z0-9._-]+", "_", normalized)
+    normalized = normalized.strip("._-")
+    return normalized or "unknown_user"
+
+
+def _build_token_dump_path(user_string: str, token_kind: str, timestamp: datetime = None) -> Path:
+    if timestamp is None:
+        timestamp = datetime.now(timezone.utc)
+    safe_user = _file_safe_user_string(user_string)
+    stamp = timestamp.strftime("%Y%m%d_%H%M%S")
+    return Path("tokens") / safe_user / f"{stamp}_{token_kind}.json"
+
+
+def _write_full_token_dump(token: str, user_string: str, token_kind: str) -> None:
+    decoded_payload = _decode_token_payload(token)
+    output_payload = {
+        "original_token": token,
+        "decoded_token": decoded_payload,
+    }
+    if decoded_payload is None:
+        output_payload["decode_error"] = "unable to decode token"
+
+    output_path = _build_token_dump_path(user_string=user_string, token_kind=token_kind)
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+
+    with output_path.open("w", encoding="utf-8") as file_obj:
+        json.dump(output_payload, file_obj, indent=2, sort_keys=True)
+        file_obj.write("\n")
+
+    print(f"{token_kind.upper()} token dump saved to: {output_path}")
+
+
+def _print_decoded_token(token: str, label: str) -> None:
+    decoded_token = _decode_token_payload(token)
+    if decoded_token is None:
         print(f"{label} decoded payload: <unable to decode token>")
         return
 
@@ -38,9 +80,8 @@ def _print_decoded_token(token: str, label: str) -> None:
 
 
 def _print_token_expiry(token: str, label: str) -> None:
-    try:
-        decoded_token = jwt.decode(token, options={"verify_signature": False})
-    except (jwt.PyJWTError, TypeError, ValueError):
+    decoded_token = _decode_token_payload(token)
+    if decoded_token is None:
         print(f"{label} expiry (UTC): <unable to decode token>")
         return
 
@@ -110,6 +151,7 @@ def cmd_e2e(args: argparse.Namespace) -> int:
     print(f"E2E success. DEDL token: {_display_token(dedl_token, args.full_token)}")
     if args.full_token:
         _print_decoded_token(dedl_token, "DEDL token")
+        _write_full_token_dump(dedl_token, username, "dedl")
     return 0
 
 
@@ -134,6 +176,7 @@ def cmd_staged(args: argparse.Namespace) -> int:
     print(f"DESP token acquired: {_display_token(desp_token, args.full_token)}")
     if args.full_token:
         _print_decoded_token(desp_token, "DESP token")
+        _write_full_token_dump(desp_token, username, "desp")
 
     dedl = DEDLAuth(desp_token, strict=True)
     dedl_token = dedl.get_token()
@@ -143,6 +186,7 @@ def cmd_staged(args: argparse.Namespace) -> int:
     print(f"DEDL token acquired: {_display_token(dedl_token, args.full_token)}")
     if args.full_token:
         _print_decoded_token(dedl_token, "DEDL token")
+        _write_full_token_dump(dedl_token, username, "dedl")
     return 0
 
 
@@ -206,7 +250,7 @@ def _interactive_choice() -> str:
 
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
-        description="Practical destinelab auth CLI demo (DESP -> DEDL)."
+        description="Practical contrib-destine-dedl-auth CLI demo (DESP -> DEDL)."
     )
     subparsers = parser.add_subparsers(dest="command", required=False)
 
@@ -218,7 +262,7 @@ def build_parser() -> argparse.ArgumentParser:
     token_output.add_argument(
         "--full-token",
         action="store_true",
-        default=False, #Normally we would default to False for safety, but setting to True here for easier testing and demonstration. Use with caution.
+        default=True, #Normally we would default to False for safety, but setting to True here for easier testing and demonstration. Use with caution.
         help="Print the full token value instead of a redacted preview.",
     )
 
