@@ -3,7 +3,7 @@ import logging
 import requests
 
 from .config import DEDL_AUDIENCE, DEDL_CLIENT_ID, DEDL_TOKEN_URL, DEFAULT_TIMEOUT_SECONDS
-from .errors import AuthNetworkError, TokenExchangeError
+from .errors import AuthNetworkError, InvalidCredentialsError, TokenExchangeError
 
 logger = logging.getLogger(__name__)
 
@@ -33,7 +33,7 @@ class DEDLAuth:
 
         try:
             response = self.request_post(DEDL_TOKEN_URL, data=data, timeout=self.timeout)
-        except requests.RequestException as exc:
+        except requests.RequestException:
             return self._handle_error("Unable to reach DEDL identity provider for token exchange.", AuthNetworkError)
 
         if response.status_code == 200: 
@@ -47,3 +47,60 @@ class DEDLAuth:
             f"Error obtaining DEDL access token (HTTP {response.status_code}).",
             TokenExchangeError,
         )
+
+
+class DEDLServiceAccountAuth:
+    def __init__(self, client_id, client_secret, timeout=DEFAULT_TIMEOUT_SECONDS, strict=False, request_post=requests.post):
+        self.client_id = client_id
+        self.client_secret = client_secret
+        self.timeout = timeout
+        self.strict = strict
+        self.request_post = request_post
+
+    def _handle_error(self, message, error_class):
+        if self.strict:
+            raise error_class(message)
+
+        logger.warning(message)
+        return None
+
+    def _map_http_error(self, status_code):
+        if status_code in (400, 401, 403):
+            return (
+                f"Service account authentication failed (HTTP {status_code}). Verify DEDL client credentials and scope.",
+                InvalidCredentialsError,
+            )
+
+        return (
+            f"Error obtaining DEDL access token via service account (HTTP {status_code}).",
+            TokenExchangeError,
+        )
+
+    def get_token(self):
+        data = {
+            "client_id": self.client_id,
+            "grant_type": "client_credentials",
+            "client_secret": self.client_secret,
+            "scope": "openid",
+        }
+
+        try:
+            response = self.request_post(DEDL_TOKEN_URL, data=data, timeout=self.timeout)
+        except requests.RequestException:
+            return self._handle_error(
+                "Unable to reach DEDL identity provider for service account authentication.",
+                AuthNetworkError,
+            )
+
+        if response.status_code == 200:
+            dedl_token = response.json().get("access_token")
+            if not dedl_token:
+                return self._handle_error(
+                    "DEDL token response did not include an access token.",
+                    TokenExchangeError,
+                )
+
+            return dedl_token
+
+        message, error_class = self._map_http_error(response.status_code)
+        return self._handle_error(message, error_class)

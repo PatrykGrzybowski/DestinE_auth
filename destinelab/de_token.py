@@ -4,14 +4,21 @@ import jwt
 
 # Import DESPAuth and DEDLAuth here to ensure they are available
 from .desp_auth import DESPAuth
-from .dedl_auth import DEDLAuth
+from .dedl_auth import DEDLAuth, DEDLServiceAccountAuth
 
 logger = logging.getLogger(__name__)
 
 
 class AuthHandler:
     def __init__(
-        self, username, password, desp_auth_class=DESPAuth, dedl_auth_class=DEDLAuth
+        self,
+        username,
+        password,
+        client_id=None,
+        client_secret=None,
+        desp_auth_class=DESPAuth,
+        dedl_auth_class=DEDLAuth,
+        dedl_service_account_auth_class=DEDLServiceAccountAuth,
     ):
         """
         Handles the overall authentication flow to obtain a DEDL token using DESP credentials.
@@ -20,18 +27,29 @@ class AuthHandler:
 
         :param username: DESP username
         :param password: DESP password
+        :param client_id: Optional DEDL service account client ID
+        :param client_secret: Optional DEDL service account client secret
         :param desp_auth_class: Class to use for DESP authentication (default: DESPAuth)
         :param dedl_auth_class: Class to use for DEDL authentication (default: DEDLAuth)
+        :param dedl_service_account_auth_class: Class to use for DEDL service account authentication (default: DEDLServiceAccountAuth)
         """
         self.username = username
         self.password = password
+        self.client_id = client_id
+        self.client_secret = client_secret
         self.desp_access_token = None
         self.dedl_access_token = None
         self.desp_auth_class = desp_auth_class
         self.dedl_auth_class = dedl_auth_class
+        self.dedl_service_account_auth_class = dedl_service_account_auth_class
 
     def get_token(self):
         """Performs the full authentication flow to retrieve a DEDL token."""
+
+        if self.client_id and self.client_secret:
+            dedl_auth = self.dedl_service_account_auth_class(self.client_id, self.client_secret)
+            self.dedl_access_token = dedl_auth.get_token()
+            return self.dedl_access_token
 
         # Get DESP auth token
         desp_auth = self.desp_auth_class(self.username, self.password)

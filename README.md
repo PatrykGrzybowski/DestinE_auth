@@ -25,6 +25,32 @@ handler = AuthHandler("DESP_USERNAME", "DESP_PASSWORD")
 dedl_token = handler.get_token()
 ```
 
+### Service account flow (client credentials)
+
+```python
+from destinelab import DEDLServiceAccountAuth
+
+dedl_token = DEDLServiceAccountAuth(
+	client_id="YOUR_CLIENT_ID",
+	client_secret="YOUR_CLIENT_SECRET",
+	strict=True,
+).get_token()
+```
+
+### End-to-end with automatic service account mode
+
+```python
+from destinelab import AuthHandler
+
+handler = AuthHandler(
+	"DESP_USERNAME",
+	"DESP_PASSWORD",
+	client_id="YOUR_CLIENT_ID",
+	client_secret="YOUR_CLIENT_SECRET",
+)
+dedl_token = handler.get_token()
+```
+
 ### Check roles and DT access
 
 ```python
@@ -43,14 +69,15 @@ from destinelab import DESPAuth, DEDLAuth
 
 desp_token = DESPAuth("DESP_USERNAME", "DESP_PASSWORD").get_desp_token()
 dedl_token = DEDLAuth(desp_token, strict=True).get_token()
+```
 
 ## Error behavior
 
 - `DESPAuth.get_desp_token()` raises explicit auth errors (for example invalid credentials, OTP required, network failures, and DESP token exchange failures).
 - `DEDLAuth.get_token()` returns `None` by default when exchange fails and logs a warning.
 - `DEDLAuth(..., strict=True).get_token()` raises explicit exceptions instead of returning `None`.
-- `AuthHandler.get_token()` uses the default `DEDLAuth` mode and may therefore return `None` when DEDL exchange fails.
-```
+- `DEDLServiceAccountAuth.get_token()` supports the same contract: default `strict=False` returns `None` with warning; `strict=True` raises explicit exceptions.
+- `AuthHandler.get_token()` uses service-account mode when both `client_id` and `client_secret` are provided; otherwise it composes `DESPAuth -> DEDLAuth` with default `DEDLAuth` behavior.
 
 ## Example script
 

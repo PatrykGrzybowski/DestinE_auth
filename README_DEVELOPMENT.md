@@ -41,6 +41,8 @@ Create a local `.env` file (do not commit it) using `.env.example` as template:
 - `DESP_PASSWORD` (required)
 - `DESP_OTP_CODE` (optional, for accounts requiring OTP)
 - `DESP_BAD_PASSWORD` (optional, only if running negative tests)
+- `DEDL_CLIENT_ID` (optional, for service-account client credentials tests)
+- `DEDL_CLIENT_SECRET` (optional, for service-account client credentials tests)
 
 ### 2) Run live tests explicitly
 
