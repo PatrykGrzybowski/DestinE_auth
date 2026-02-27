@@ -4,7 +4,7 @@ from pathlib import Path
 from unittest.mock import patch
 
 from destinelab.config import DEFAULT_TIMEOUT_SECONDS
-from destinelab.dedl_auth import DEDLAuth
+from destinelab.dedl_auth import DEDLAuth, DEDLServiceAccountAuth
 from destinelab.de_token import AuthHandler
 from destinelab.desp_auth import DESPAuth
 from destinelab.errors import InvalidCredentialsError, OTPRequiredError, TokenExchangeError
@@ -15,6 +15,8 @@ ENV_ALLOWLIST = {
     "DESP_PASSWORD",
     "DESP_BAD_PASSWORD",
     "DESP_OTP_CODE",
+    "DEDL_CLIENT_ID",
+    "DEDL_CLIENT_SECRET",
     "RUN_LIVE_AUTH_TESTS",
     "RUN_LIVE_NEGATIVE_TESTS",
     "RUN_LIVE_AUTH_TESTS_IN_CI",
@@ -77,6 +79,8 @@ class TestLiveAuthIntegration(unittest.TestCase):
         cls.password = cls.live_env.get("DESP_PASSWORD")
         cls.bad_password = cls.live_env.get("DESP_BAD_PASSWORD")
         cls.otp_code = cls.live_env.get("DESP_OTP_CODE")
+        cls.dedl_client_id = cls.live_env.get("DEDL_CLIENT_ID")
+        cls.dedl_client_secret = cls.live_env.get("DEDL_CLIENT_SECRET")
         cls.run_negative_tests = _is_truthy(cls.live_env.get("RUN_LIVE_NEGATIVE_TESTS"))
 
         if not cls.username or not cls.password:
@@ -130,6 +134,21 @@ class TestLiveAuthIntegration(unittest.TestCase):
 
         with self.assertRaises(TokenExchangeError):
             DEDLAuth("not-a-valid-desp-token", timeout=self.timeout, strict=True).get_token()
+
+    def test_service_account_client_credentials_optional(self):
+        if not self.dedl_client_id or not self.dedl_client_secret:
+            self.skipTest("Set DEDL_CLIENT_ID and DEDL_CLIENT_SECRET to run service-account live test.")
+
+        token = DEDLServiceAccountAuth(
+            client_id=self.dedl_client_id,
+            client_secret=self.dedl_client_secret,
+            timeout=self.timeout,
+            strict=True,
+        ).get_token()
+
+        self.assertIsInstance(token, str)
+        self.assertGreater(len(token), 20)
+        self.assertEqual(token.count("."), 2)
 
     def test_otp_requirement_is_explicit_when_no_code_available(self):
         if self.otp_code:

@@ -56,6 +56,12 @@ Optional negative tests:
 RUN_LIVE_AUTH_TESTS=1 RUN_LIVE_NEGATIVE_TESTS=1 python -m unittest -v tests.integration.test_live_auth_integration
 ```
 
+Optional service-account live test (client credentials):
+
+```bash
+RUN_LIVE_AUTH_TESTS=1 DEDL_CLIENT_ID=... DEDL_CLIENT_SECRET=... python -m unittest -v tests.integration.test_live_auth_integration
+```
+
 ### 3) CI safety
 
 These tests are skipped by default in CI. To force them in CI, set:

@@ -10,7 +10,7 @@ import sys
 
 import jwt
 
-from destinelab import AuthHandler, DESPAuth, DEDLAuth
+from destinelab import AuthHandler, DEDLServiceAccountAuth, DESPAuth, DEDLAuth
 from destinelab.errors import AuthError, TokenExchangeError
 
 
@@ -190,6 +190,37 @@ def cmd_staged(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_service_account(args: argparse.Namespace) -> int:
+    """
+    Service-account authentication flow:
+    use DEDL client credentials to obtain a DEDL token directly.
+    """
+    client_id = _pick_value(args.client_id, "DEDL_CLIENT_ID", "DEDL client ID: ")
+    client_secret = _pick_value(
+        args.client_secret,
+        "DEDL_CLIENT_SECRET",
+        "DEDL client secret: ",
+        secret=True,
+    )
+
+    dedl_token = DEDLServiceAccountAuth(
+        client_id=client_id,
+        client_secret=client_secret,
+        strict=True,
+    ).get_token()
+
+    _print_token_expiry(dedl_token, "DEDL token")
+    _print_dt_access_allowed(dedl_token, "DEDL token")
+
+    if args.full_token:
+        print("Warning: printing full token to console.")
+    print(f"Service-account success. DEDL token: {_display_token(dedl_token, args.full_token)}")
+    if args.full_token:
+        _print_decoded_token(dedl_token, "DEDL token")
+        _write_full_token_dump(dedl_token, client_id, "dedl")
+    return 0
+
+
 def cmd_roles(args: argparse.Namespace) -> int:
     """
     Inspect roles from a token using AuthHandler.get_roles.
@@ -225,24 +256,27 @@ def _print_quick_start() -> None:
     print("This script demonstrates the most common library usage patterns:")
     print("  1) End-to-end: DESP credentials -> DEDL token")
     print("  2) Staged flow: DESP token, then DEDL exchange")
-    print("  3) Inspect roles from a token")
-    print("  4) Check DT access from a token")
-    print("\nTip: you can set DESP_USERNAME and DESP_PASSWORD env vars.\n")
+    print("  3) Service account flow: client credentials -> DEDL token")
+    print("  4) Inspect roles from a token")
+    print("  5) Check DT access from a token")
+    print("\nTip: you can set DESP_USERNAME, DESP_PASSWORD, DEDL_CLIENT_ID, and DEDL_CLIENT_SECRET env vars.\n")
 
 
 def _interactive_choice() -> str:
     print("Choose an option:")
     print("  1) End-to-end token flow")
     print("  2) Staged DESP -> DEDL flow")
-    print("  3) Decode roles from token")
-    print("  4) Check DT access")
+    print("  3) Service-account token flow")
+    print("  4) Decode roles from token")
+    print("  5) Check DT access")
     print("  q) Quit")
     choice = input("Selection: ").strip().lower()
     mapping = {
         "1": "e2e",
         "2": "staged",
-        "3": "roles",
-        "4": "dt-access",
+        "3": "service-account",
+        "4": "roles",
+        "5": "dt-access",
         "q": "quit",
     }
     return mapping.get(choice, "")
@@ -280,6 +314,21 @@ def build_parser() -> argparse.ArgumentParser:
     )
     p_staged.add_argument("--otp", help="OTP code (or DESP_OTP_CODE)")
     p_staged.set_defaults(func=cmd_staged)
+
+    p_service_account = subparsers.add_parser(
+        "service-account",
+        parents=[token_output],
+        help="Run DEDL service-account authentication (client credentials grant).",
+    )
+    p_service_account.add_argument(
+        "--client-id",
+        help="DEDL service account client ID (or DEDL_CLIENT_ID)",
+    )
+    p_service_account.add_argument(
+        "--client-secret",
+        help="DEDL service account client secret (or DEDL_CLIENT_SECRET)",
+    )
+    p_service_account.set_defaults(func=cmd_service_account)
 
     p_roles = subparsers.add_parser(
         "roles",
