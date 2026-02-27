@@ -1,3 +1,65 @@
+# DestinE Auth
+
+DestinE Auth is a helper package that simplifies authentication for DestinE workflows:
+
+1. Authenticate with DESP credentials.
+2. Get a DESP access token.
+3. Exchange that token for a DEDL access token.
+
+## Install
+
+```bash
+pip install destinelab
+```
+
+Python compatibility: 3.8+
+
+## Quick usage
+
+### End-to-end flow (recommended)
+
+```python
+from destinelab import AuthHandler
+
+handler = AuthHandler("DESP_USERNAME", "DESP_PASSWORD")
+dedl_token = handler.get_token()
+```
+
+### Check roles and DT access
+
+```python
+from destinelab import AuthHandler
+
+handler = AuthHandler("", "")
+roles = handler.get_roles(dedl_token)
+is_allowed = handler.is_DTaccess_allowed(dedl_token)
+```
+
+### Staged flow (advanced)
+
+```python
+from destinelab import DESPAuth, DEDLAuth
+
+desp_token = DESPAuth("DESP_USERNAME", "DESP_PASSWORD").get_token_otp()
+dedl_token = DEDLAuth(desp_token).get_token()
+```
+
+## Example script
+
+For an interactive usage walkthrough, run:
+
+```bash
+python script_example.py
+```
+
+## Development and testing docs
+
+Development and testing workflows are documented in `README_DEVELOPMENT.md`.
+
+## License
+
+This project is licensed under MIT. See `LICENSE`.
+
 MIT License
 
 Copyright (c) 2025 Patryk Grzybowski
