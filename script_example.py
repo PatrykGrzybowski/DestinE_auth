@@ -218,7 +218,7 @@ def build_parser() -> argparse.ArgumentParser:
     token_output.add_argument(
         "--full-token",
         action="store_true",
-        default=True, #Normally we would default to False for safety, but setting to True here for easier testing and demonstration. Use with caution.
+        default=False, #Normally we would default to False for safety, but setting to True here for easier testing and demonstration. Use with caution.
         help="Print the full token value instead of a redacted preview.",
     )
 
