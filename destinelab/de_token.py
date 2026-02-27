@@ -20,7 +20,7 @@ class AuthHandler:
     def get_token(self):
         # Get DESP auth token
         desp_auth = self.desp_auth_class(self.username, self.password)
-        self.desp_access_token = desp_auth.get_token_otp()
+        self.desp_access_token = desp_auth.get_desp_token()
         
         # Get DEDL auth token
         dedl_auth = self.dedl_auth_class(self.desp_access_token)

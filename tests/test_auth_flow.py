@@ -50,7 +50,7 @@ class TestDESPAuth(unittest.TestCase):
         )
 
         auth = DESPAuth("user", "pass", session_factory=lambda: session)
-        self.assertEqual(auth.get_token_otp(), "desp-token")
+        self.assertEqual(auth.get_desp_token(), "desp-token")
 
     def test_get_token_with_otp_success(self):
         session = FakeSession(
@@ -68,7 +68,7 @@ class TestDESPAuth(unittest.TestCase):
         )
 
         auth = DESPAuth("user", "pass", session_factory=lambda: session)
-        self.assertEqual(auth.get_token_otp(otp_code="123456"), "desp-token-otp")
+        self.assertEqual(auth.get_desp_token(otp_code="123456"), "desp-token-otp")
 
     def test_invalid_credentials_raise_specific_error(self):
         session = FakeSession(
@@ -85,7 +85,7 @@ class TestDESPAuth(unittest.TestCase):
 
         auth = DESPAuth("user", "bad-pass", session_factory=lambda: session)
         with self.assertRaises(InvalidCredentialsError):
-            auth.get_token_otp()
+            auth.get_desp_token()
 
 
 class TestDEDLAuth(unittest.TestCase):

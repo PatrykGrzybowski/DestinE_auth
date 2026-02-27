@@ -168,7 +168,7 @@ def cmd_staged(args: argparse.Namespace) -> int:
     otp_code = _pick_value(args.otp, "DESP_OTP_CODE", "OTP (leave blank if not needed): ")
 
     desp = DESPAuth(username, password)
-    desp_token = desp.get_token_otp(otp_code=otp_code or None)
+    desp_token = desp.get_desp_token(otp_code=otp_code or None)
     _print_token_expiry(desp_token, "DESP token")
 
     if args.full_token:

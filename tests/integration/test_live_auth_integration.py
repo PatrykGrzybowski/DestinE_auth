@@ -104,7 +104,7 @@ class TestLiveAuthIntegration(unittest.TestCase):
     def test_staged_desp_to_dedl_exchange(self):
         desp_auth = DESPAuth(self.username, self.password, timeout=self.timeout, otp_provider=lambda: self._input_fallback())
 
-        desp_token = desp_auth.get_token_otp(otp_code=self.otp_code)
+        desp_token = desp_auth.get_desp_token(otp_code=self.otp_code)
         self.assertIsInstance(desp_token, str)
         self.assertEqual(desp_token.count("."), 2)
 
@@ -126,7 +126,7 @@ class TestLiveAuthIntegration(unittest.TestCase):
             otp_provider=lambda: self._input_fallback(),
         )
         with self.assertRaises(InvalidCredentialsError):
-            invalid_auth.get_token_otp(otp_code=self.otp_code)
+            invalid_auth.get_desp_token(otp_code=self.otp_code)
 
         with self.assertRaises(TokenExchangeError):
             DEDLAuth("not-a-valid-desp-token", timeout=self.timeout, strict=True).get_token()
@@ -138,7 +138,7 @@ class TestLiveAuthIntegration(unittest.TestCase):
         auth = DESPAuth(self.username, self.password, timeout=self.timeout, otp_provider=lambda: "")
 
         try:
-            token = auth.get_token_otp()
+            token = auth.get_desp_token()
             self.assertIsInstance(token, str)
         except OTPRequiredError:
             self.assertTrue(True)
