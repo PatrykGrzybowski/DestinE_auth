@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 from pathlib import Path
 this_directory = Path(__file__).parent
-long_description = (this_directory / "README.md").read_text()
+long_description = (this_directory / "README.md").read_text(encoding="utf-8")
 
 setup(
     name='destinelab',
@@ -20,7 +20,7 @@ setup(
     ],
     long_description=long_description,
     long_description_content_type='text/markdown',
-    packages=find_packages(),
+    packages=find_packages(exclude=["tests", "tests.*"]),
     install_requires=[
         'requests',
         'lxml',

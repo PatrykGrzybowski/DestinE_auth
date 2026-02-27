@@ -1,0 +1,13 @@
+include README.md
+include LICENSE
+recursive-include destinelab *.py
+
+prune tests
+prune .github
+
+exclude .env
+exclude .env.*
+exclude .gitignore
+exclude script_example.py
+exclude README_DEVELOPMENT.md
+exclude destinelab.egg-info/*
