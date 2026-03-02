@@ -47,7 +47,7 @@ python -m zipfile -l dist/*.whl
 
 ## Internal demo script usage
 
-`script_example.py` is an internal debug/testing helper with no CLI and no interactive menu.
+`script_example.py` is an internal debug/testing helper.
 It uses simple variables in the `__main__` block to choose which flow to run.
 
 How to use:
