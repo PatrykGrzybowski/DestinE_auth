@@ -3,8 +3,10 @@
 DestinE Auth is a helper package that simplifies authentication for DestinE workflows:
 
 1. Authenticate with DESP credentials.
-2. Get a DESP access token.
+2. Get a DESP access token. (Normally transparent for the user)
 3. Exchange that token for a DEDL access token.
+
+A `Destination Earth - Data Lake` access token is necessary to interact with `Destination Earth - Data Lake` APIs and services.
 
 ## Install
 
@@ -12,29 +14,35 @@ DestinE Auth is a helper package that simplifies authentication for DestinE work
 pip install destinelab
 ```
 
-Python compatibility: 3.8+
+Note: Python compatibility: 3.8+
 
 ## Quick usage
 
-### End-to-end flow (recommended)
+Repository demo and contributor workflows (including the interactive demo script) are documented in `README_DEVELOPMENT.md`.
+
+### Standart usage
 
 ```python
 from destinelab import AuthHandler
 
 handler = AuthHandler("DESP_USERNAME", "DESP_PASSWORD")
 dedl_token = handler.get_token()
+
+auth_headers = {"Authorization": f"Bearer {dedl_token}"} # Example of how to use the token in API requests
+
 ```
 
-### Service account flow (client credentials)
+### Service account usage (client credentials)
 
 ```python
+
 from destinelab import DEDLServiceAccountAuth
 
 dedl_token = DEDLServiceAccountAuth(
 	client_id="YOUR_CLIENT_ID",
 	client_secret="YOUR_CLIENT_SECRET",
-	strict=True,
 ).get_token()
+
 ```
 
 ### End-to-end with automatic service account mode
@@ -49,26 +57,35 @@ handler = AuthHandler(
 	client_secret="YOUR_CLIENT_SECRET",
 )
 dedl_token = handler.get_token()
+
 ```
 
 ### Check roles and DT access
 
+- `AuthHandler` also provides helper methods to check the roles associated with the token and whether DT access is allowed, which can be useful for debugging or conditional logic in your application.
+
 ```python
+
 from destinelab import AuthHandler
 
 handler = AuthHandler("DESP_USERNAME", "DESP_PASSWORD")
 dedl_token = handler.get_token()
 roles = handler.get_roles(dedl_token)
-is_allowed = handler.is_DTaccess_allowed(dedl_token)
+is_dt_access_allowed = handler.is_DTaccess_allowed(dedl_token)
+
 ```
 
-### Staged flow (advanced)
+### DESP and DEDL token exchange (i.e. breaking the process down into individual steps)
+
+- This is not recommended or useful for typical users, but can be useful for debugging or if you need more control over the individual steps.
 
 ```python
+
 from destinelab import DESPAuth, DEDLAuth
 
 desp_token = DESPAuth("DESP_USERNAME", "DESP_PASSWORD").get_desp_token()
-dedl_token = DEDLAuth(desp_token, strict=True).get_token()
+dedl_token = DEDLAuth(desp_token).get_token()
+
 ```
 
 ## Error behavior
@@ -79,17 +96,6 @@ dedl_token = DEDLAuth(desp_token, strict=True).get_token()
 - `DEDLServiceAccountAuth.get_token()` supports the same contract: default `strict=False` returns `None` with warning; `strict=True` raises explicit exceptions.
 - `AuthHandler.get_token()` uses service-account mode when both `client_id` and `client_secret` are provided; otherwise it composes `DESPAuth -> DEDLAuth` with default `DEDLAuth` behavior.
 
-## Example script
-
-For an interactive usage walkthrough, run:
-
-```bash
-python script_example.py
-```
-
-## Development and testing docs
-
-Development and testing workflows are documented in `README_DEVELOPMENT.md`.
 
 ## License
 

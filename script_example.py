@@ -1,17 +1,17 @@
 #!/usr/bin/env python3
-import argparse
 from datetime import datetime, timezone
 import json
-import getpass
 import os
 from pathlib import Path
 import re
-import sys
+from typing import Optional
 
+from dotenv import load_dotenv
 import jwt
 
 from destinelab import AuthHandler, DEDLServiceAccountAuth, DESPAuth, DEDLAuth
-from destinelab.errors import AuthError, TokenExchangeError
+
+load_dotenv()  # loads .env into os.environ
 
 
 def _token_preview(token: str) -> str:
@@ -42,7 +42,9 @@ def _file_safe_user_string(user_string: str) -> str:
     return normalized or "unknown_user"
 
 
-def _build_token_dump_path(user_string: str, token_kind: str, timestamp: datetime = None) -> Path:
+def _build_token_dump_path(
+    user_string: str, token_kind: str, timestamp: datetime = None
+) -> Path:
     if timestamp is None:
         timestamp = datetime.now(timezone.utc)
     safe_user = _file_safe_user_string(user_string)
@@ -110,125 +112,18 @@ def _print_token_expiry(token: str, label: str) -> None:
 
 
 def _print_dt_access_allowed(token: str, label: str) -> None:
+    """
+    This function could in principle be used on Both DESP and DEDL tokens, but in practice the DPAD_Direct_Access role is only relevant for DEDL tokens since that's what controls access to DT output.
+    """
     handler = AuthHandler(username="", password="")
     is_allowed = handler.is_DTaccess_allowed(token)
     print(f"{label} DT access allowed: {is_allowed}")
 
 
-def _pick_value(cli_value: str, env_key: str, prompt: str, secret: bool = False) -> str:
-    if cli_value:
-        return cli_value
-    env_val = os.getenv(env_key)
-    if env_val:
-        return env_val
-    if secret:
-        return getpass.getpass(prompt)
-    return input(prompt).strip()
-
-
-def cmd_e2e(args: argparse.Namespace) -> int:
+def _print_roles(token: str, label: str) -> None:
     """
-    End-to-end authentication flow: DESP credentials -> DEDL token.
-    This demonstrates the simplest usage pattern via AuthHandler, which abstracts away the individual steps.
-
-    A user gets a handler using their DESP credentials, then calls get_token() to perform the full flow and retrieve a DEDL token.
-    This is the most common usage pattern for clients that just want to get a DEDL token and don't care about the intermediate steps or tokens.
+    Print the roles of the provided token.
     """
-    username = _pick_value(args.username, "DESP_USERNAME", "DESP username: ")
-    password = _pick_value(args.password, "DESP_PASSWORD", "DESP password: ", secret=True)
-
-    handler = AuthHandler(username, password)
-    dedl_token = handler.get_token()
-    if not dedl_token:
-        print("E2E auth did not return a DEDL token.")
-        return 1
-
-    _print_token_expiry(dedl_token, "DEDL token")
-    _print_dt_access_allowed(dedl_token, "DEDL token")
-
-    if args.full_token:
-        print("Warning: printing full token to console.")
-    print(f"E2E success. DEDL token: {_display_token(dedl_token, args.full_token)}")
-    if args.full_token:
-        _print_decoded_token(dedl_token, "DEDL token")
-        _write_full_token_dump(dedl_token, username, "dedl")
-    return 0
-
-
-def cmd_staged(args: argparse.Namespace) -> int:
-    """
-    Staged authentication flow: 
-    run DESPAuth to get a DESP token, then use that token with DEDLAuth to get a DEDL token.
-    This demonstrates how to use the individual auth classes separately, 
-    which is useful for clients that need more control or want to handle the DESP and DEDL steps independently (e.g. caching the DESP token).
-    """
-
-    username = _pick_value(args.username, "DESP_USERNAME", "DESP username: ")
-    password = _pick_value(args.password, "DESP_PASSWORD", "DESP password: ", secret=True)
-    otp_code = _pick_value(args.otp, "DESP_OTP_CODE", "OTP (leave blank if not needed): ")
-
-    desp = DESPAuth(username, password)
-    desp_token = desp.get_desp_token(otp_code=otp_code or None)
-    _print_token_expiry(desp_token, "DESP token")
-
-    if args.full_token:
-        print("Warning: printing full tokens to console.")
-    print(f"DESP token acquired: {_display_token(desp_token, args.full_token)}")
-    if args.full_token:
-        _print_decoded_token(desp_token, "DESP token")
-        _write_full_token_dump(desp_token, username, "desp")
-
-    dedl = DEDLAuth(desp_token, strict=True)
-    dedl_token = dedl.get_token()
-    _print_token_expiry(dedl_token, "DEDL token")
-    _print_dt_access_allowed(dedl_token, "DEDL token")
-
-    print(f"DEDL token acquired: {_display_token(dedl_token, args.full_token)}")
-    if args.full_token:
-        _print_decoded_token(dedl_token, "DEDL token")
-        _write_full_token_dump(dedl_token, username, "dedl")
-    return 0
-
-
-def cmd_service_account(args: argparse.Namespace) -> int:
-    """
-    Service-account authentication flow:
-    use DEDL client credentials to obtain a DEDL token directly.
-    """
-    client_id = _pick_value(args.client_id, "DEDL_CLIENT_ID", "DEDL client ID: ")
-    client_secret = _pick_value(
-        args.client_secret,
-        "DEDL_CLIENT_SECRET",
-        "DEDL client secret: ",
-        secret=True,
-    )
-
-    dedl_token = DEDLServiceAccountAuth(
-        client_id=client_id,
-        client_secret=client_secret,
-        strict=True,
-    ).get_token()
-
-    _print_token_expiry(dedl_token, "DEDL token")
-    _print_dt_access_allowed(dedl_token, "DEDL token")
-
-    if args.full_token:
-        print("Warning: printing full token to console.")
-    print(f"Service-account success. DEDL token: {_display_token(dedl_token, args.full_token)}")
-    if args.full_token:
-        _print_decoded_token(dedl_token, "DEDL token")
-        _write_full_token_dump(dedl_token, client_id, "dedl")
-    return 0
-
-
-def cmd_roles(args: argparse.Namespace) -> int:
-    """
-    Inspect roles from a token using AuthHandler.get_roles.
-    This is a utility command to help users understand the contents of their tokens and verify what roles they have.
-    The user provides a token (either via CLI arg or env var), and the command decodes it and prints the roles it contains."""
-    token = _pick_value(args.token, "DEDL_TOKEN", "Token to inspect roles: ")
-    _print_token_expiry(token, "Input token")
-    _print_dt_access_allowed(token, "Input token")
 
     handler = AuthHandler(username="", password="")
     roles = handler.get_roles(token) or []
@@ -237,148 +132,177 @@ def cmd_roles(args: argparse.Namespace) -> int:
         print(f"- {role}")
     if not roles:
         print("(none)")
-    return 0
 
 
-def cmd_dt_access(args: argparse.Namespace) -> int:
-    token = _pick_value(args.token, "DEDL_TOKEN", "Token to check DT access: ")
-    _print_token_expiry(token, "Input token")
-
-    handler = AuthHandler(username="", password="")
-    allowed = handler.is_DTaccess_allowed(token)
-    print(f"DT access allowed: {allowed}")
-    return 0
+def _print_banner(message: str) -> None:
+    print("\n" + "=" * 60)
+    print(message)
+    print("=" * 60 + "\n")
 
 
-def _print_quick_start() -> None:
-    print("\nDestinE Auth Example")
-    print("-" * 24)
-    print("This script demonstrates the most common library usage patterns:")
-    print("  1) End-to-end: DESP credentials -> DEDL token")
-    print("  2) Staged flow: DESP token, then DEDL exchange")
-    print("  3) Service account flow: client credentials -> DEDL token")
-    print("  4) Inspect roles from a token")
-    print("  5) Check DT access from a token")
-    print("\nTip: you can set DESP_USERNAME, DESP_PASSWORD, DEDL_CLIENT_ID, and DEDL_CLIENT_SECRET env vars.\n")
+def _print_info_token(
+    token: str, token_label: str, username: str, is_print_full_token: bool
+) -> None:
+
+    # Token expiry
+    _print_token_expiry(token, token_label)
+    # DTAccess allowed
+    _print_dt_access_allowed(token, token_label)
+    # Roles
+    _print_roles(token, token_label)
+
+    if is_print_full_token:
+        print("Warning: printing full token to console.")
+        _print_decoded_token(token, token_label)
+        _write_full_token_dump(token, username, "dedl")
+
+    print(f"Standard success. DEDL token: {_display_token(token, is_print_full_token)}")
 
 
-def _interactive_choice() -> str:
-    print("Choose an option:")
-    print("  1) End-to-end token flow")
-    print("  2) Staged DESP -> DEDL flow")
-    print("  3) Service-account token flow")
-    print("  4) Decode roles from token")
-    print("  5) Check DT access")
-    print("  q) Quit")
-    choice = input("Selection: ").strip().lower()
-    mapping = {
-        "1": "e2e",
-        "2": "staged",
-        "3": "service-account",
-        "4": "roles",
-        "5": "dt-access",
-        "q": "quit",
-    }
-    return mapping.get(choice, "")
+def run_standard_authentication(
+    username: str,
+    password: str,
+    otp_code: Optional[str] = None,
+    is_print_full_token: bool = False,
+) -> None:
+    """
+    Standard authentication flow using AuthHandler, which abstracts the full process of obtaining a DEDL token from DESP credentials.
+    """
 
+    _print_banner("START: Running standard authentication flow")
 
-def build_parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(
-        description="Practical contrib-destine-dedl-auth CLI demo (DESP -> DEDL)."
-    )
-    subparsers = parser.add_subparsers(dest="command", required=False)
+    # Standard flow with AuthHandler, which abstracts the steps and returns a DEDL token directly.
+    handler = AuthHandler(username, password)
+    dedl_token = handler.get_token()
+    if not dedl_token:
+        raise ValueError("Failed to obtain DEDL token in standard authentication flow.")
 
-    common_auth = argparse.ArgumentParser(add_help=False)
-    common_auth.add_argument("-u", "--username", help="DESP username (or DESP_USERNAME)")
-    common_auth.add_argument("-p", "--password", help="DESP password (or DESP_PASSWORD)")
-
-    token_output = argparse.ArgumentParser(add_help=False)
-    token_output.add_argument(
-        "--full-token",
-        action="store_true",
-        default=False, #Normally we would default to False for safety, but setting to True here for easier testing and demonstration. Use with caution.
-        help="Print the full token value instead of a redacted preview.",
+    _print_info_token(
+        dedl_token, "DEDL token", username, is_print_full_token=is_print_full_token
     )
 
-    p_e2e = subparsers.add_parser(
-        "e2e",
-        parents=[common_auth, token_output],
-        help="Run full DESP login + DEDL exchange via AuthHandler.",
+    _print_banner("END: Running standard authentication flow")
+
+
+def run_staged_authentication(
+    username: str,
+    password: str,
+    otp_code: Optional[str] = None,
+    is_print_full_token: bool = False,
+) -> None:
+    """
+    Staged authentication flow:
+    run DESPAuth to get a DESP token, then use that token with DEDLAuth to get a DEDL token.
+    This demonstrates how to use the individual auth classes separately,
+    which is useful for clients that need more control or want to handle the DESP and DEDL steps independently (e.g. caching the DESP token).
+    """
+
+    _print_banner("START: Running staged authentication flow")
+
+    ##################################################
+
+    desp = DESPAuth(username, password)
+    desp_token = desp.get_desp_token(otp_code=otp_code or None)
+
+    _print_info_token(
+        desp_token, "DESP token", username, is_print_full_token=is_print_full_token
     )
-    p_e2e.set_defaults(func=cmd_e2e)
 
-    p_staged = subparsers.add_parser(
-        "staged",
-        parents=[common_auth, token_output],
-        help="Run DESPAuth then DEDLAuth as separate steps.",
+    ##################################################
+
+    dedl = DEDLAuth(desp_token, strict=True)
+    dedl_token = dedl.get_token()
+    if not dedl_token:
+        raise ValueError("Failed to obtain DEDL token in staged authentication flow.")
+
+    _print_info_token(
+        dedl_token, "DEDL token", username, is_print_full_token=is_print_full_token
     )
-    p_staged.add_argument("--otp", help="OTP code (or DESP_OTP_CODE)")
-    p_staged.set_defaults(func=cmd_staged)
 
-    p_service_account = subparsers.add_parser(
-        "service-account",
-        parents=[token_output],
-        help="Run DEDL service-account authentication (client credentials grant).",
+    ##################################################
+
+    _print_banner("END: Running staged authentication flow")
+
+
+def run_service_account_authentication(
+    client_id: str, client_secret: str, is_print_full_token: bool = False
+) -> None:
+    """
+    Service-account authentication flow:
+    use DEDL client credentials grant to obtain a DEDL token directly.
+    """
+    _print_banner("START: Running service-account authentication flow")
+
+    dedl_token = DEDLServiceAccountAuth(
+        client_id=client_id,
+        client_secret=client_secret,
+        strict=True,
+    ).get_token()
+    if not dedl_token:
+        raise ValueError(
+            "Failed to obtain DEDL token in service-account authentication flow."
+        )
+
+    _print_info_token(
+        dedl_token, "DEDL token", client_id, is_print_full_token=is_print_full_token
     )
-    p_service_account.add_argument(
-        "--client-id",
-        help="DEDL service account client ID (or DEDL_CLIENT_ID)",
-    )
-    p_service_account.add_argument(
-        "--client-secret",
-        help="DEDL service account client secret (or DEDL_CLIENT_SECRET)",
-    )
-    p_service_account.set_defaults(func=cmd_service_account)
 
-    p_roles = subparsers.add_parser(
-        "roles",
-        help="Decode token roles using AuthHandler.get_roles.",
-    )
-    p_roles.add_argument("--token", help="JWT token (or DEDL_TOKEN)")
-    p_roles.set_defaults(func=cmd_roles)
-
-    p_dt = subparsers.add_parser(
-        "dt-access",
-        help="Check DPAD_Direct_Access role with AuthHandler.is_DTaccess_allowed.",
-    )
-    p_dt.add_argument("--token", help="JWT token (or DEDL_TOKEN)")
-    p_dt.set_defaults(func=cmd_dt_access)
-
-    return parser
-
-
-def main() -> int:
-    parser = build_parser()
-
-    if len(sys.argv) == 1:
-        _print_quick_start()
-        chosen = _interactive_choice()
-        if chosen == "quit":
-            print("Bye.")
-            return 0
-        if not chosen:
-            print("Invalid selection.")
-            return 1
-        args = parser.parse_args([chosen])
-    else:
-        args = parser.parse_args()
-
-    if not getattr(args, "command", None):
-        parser.print_help()
-        return 1
-
-    try:
-        return args.func(args)
-    except (AuthError, TokenExchangeError) as exc:
-        print(f"Auth error: {exc}")
-        return 2
-    except KeyboardInterrupt:
-        print("\nCancelled.")
-        return 130
-    except Exception as exc:
-        print(f"Unexpected error: {exc}")
-        return 99
+    _print_banner("END: Running service-account authentication flow")
 
 
 if __name__ == "__main__":
-    sys.exit(main())
+
+    RUN_MODE = "staged"  # "standard" | "staged" | "service-account"
+    FULL_TOKEN_OUTPUT = True
+
+    # If we are running in standard mode we need DESP credentials.
+    if RUN_MODE in ("standard", "staged"):
+
+        desp_username = os.getenv("DESP_USERNAME")
+        desp_password = os.getenv("DESP_PASSWORD")
+        desp_otp_code = os.getenv(
+            "DESP_OTP_CODE"
+        )  # optional OTP code for accounts with MFA
+
+        if not desp_username or not desp_password:
+            raise ValueError(
+                "Error: DESP_USERNAME and DESP_PASSWORD must be set in the .env file to run this script."
+            )
+
+        if RUN_MODE == "standard":
+
+            run_standard_authentication(
+                username=desp_username,
+                password=desp_password,
+                is_print_full_token=FULL_TOKEN_OUTPUT,
+            )
+
+        else:  # RUN_MODE == "staged"
+
+            run_staged_authentication(
+                username=desp_username,
+                password=desp_password,
+                otp_code=desp_otp_code,
+                is_print_full_token=FULL_TOKEN_OUTPUT,
+            )
+
+    elif RUN_MODE == "service-account":
+
+        client_id = os.getenv("DEDL_CLIENT_ID")
+        client_secret = os.getenv("DEDL_CLIENT_SECRET")
+        if not client_id or not client_secret:
+            raise ValueError(
+                "Error: DEDL_CLIENT_ID and DEDL_CLIENT_SECRET must be set in the .env file to run this script in service-account mode."
+            )
+
+        run_service_account_authentication(
+            client_id=client_id,
+            client_secret=client_secret,
+            is_print_full_token=FULL_TOKEN_OUTPUT,
+        )
+
+    else:
+
+        print(
+            f"Error: invalid RUN_MODE '{RUN_MODE}' in script. Must be 'standard', 'staged', or 'service-account'."
+        )

@@ -1,5 +1,34 @@
 # DestinE Auth Development Guide
 
+
+## Setup environment for development
+
+1. Clone the repository and navigate to the `DestinE_auth` package:
+
+```bash
+git clone <repository_url>
+cd DestinE_auth
+```
+
+2. Create a virtual environment and activate it:
+
+```bash
+
+uv venv .venv --python=3.12
+source .venv/bin/activate
+
+```
+
+3. Install the package in editable mode along with development dependencies:
+
+```bash
+
+uv pip install -e .[dev]
+
+```
+
+
+
 ## Packaging policy
 
 Published artifacts must contain runtime code only.
@@ -15,6 +44,37 @@ python -m twine check dist/*
 tar -tf dist/*.tar.gz
 python -m zipfile -l dist/*.whl
 ```
+
+## Internal demo script usage
+
+`script_example.py` is an internal debug/testing helper with no CLI and no interactive menu.
+It uses simple variables in the `__main__` block to choose which flow to run.
+
+How to use:
+
+1. Set required credentials in `.env`:
+
+```env
+DESP_USERNAME=your_username
+DESP_PASSWORD=your_password
+DESP_OTP_CODE=optional_otp
+DEDL_CLIENT_ID=optional_service_account_client_id
+DEDL_CLIENT_SECRET=optional_service_account_client_secret
+```
+
+2. Open `script_example.py` and set:
+- `RUN_MODE` to one of `e2e`, `staged`, `service-account`.
+- `FULL_TOKEN_OUTPUT` to `True` or `False`.
+
+3. Run the script:
+
+```bash
+python script_example.py
+```
+
+`DESP_USERNAME` and `DESP_PASSWORD` are mandatory and must be provided via `.env` (or exported environment variables); the script raises an error if they are missing.
+For each retrieved DEDL token, the script prints expiry, roles, and DT access status.
+When `FULL_TOKEN_OUTPUT=True`, it also prints full tokens and writes decoded token dumps to `tokens/`.
 
 ## CI and release flow
 

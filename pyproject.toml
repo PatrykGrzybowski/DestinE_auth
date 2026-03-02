@@ -2,6 +2,40 @@
 requires = ["setuptools>=68", "wheel", "build"]
 build-backend = "setuptools.build_meta"
 
+[project]
+name = "destinelab"
+version = "1.13"
+description = "Destinelab Python package"
+readme = { file = "README.md", content-type = "text/markdown" }
+requires-python = ">=3.8"
+license = { text = "MIT" }
+
+classifiers = [
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.8",
+  "Programming Language :: Python :: 3.9",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "License :: OSI Approved :: MIT License",
+  "Operating System :: OS Independent",
+]
+
+dependencies = [
+  "requests",
+  "lxml",
+  "PyJWT",
+]
+
+[project.optional-dependencies]
+dev = [
+  "python-dotenv", 
+  "ruff", 
+  "black", 
+  "mypy", 
+  "setuptools>=68",
+]
+
 [tool.setuptools.packages.find]
 where = ["."]
 exclude = [
