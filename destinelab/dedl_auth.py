@@ -5,10 +5,9 @@ from .errors import AuthNetworkError, InvalidCredentialsError, TokenExchangeErro
 
 
 class DEDLAuth:
-    def __init__(self, desp_access_token, timeout=DEFAULT_TIMEOUT_SECONDS, strict=False, request_post=requests.post):
+    def __init__(self, desp_access_token, timeout=DEFAULT_TIMEOUT_SECONDS, request_post=requests.post):
         self.desp_access_token = desp_access_token
         self.timeout = timeout
-        self.strict = strict
         self.request_post = request_post
 
     def get_token(self):
@@ -39,11 +38,10 @@ class DEDLAuth:
 
 
 class DEDLServiceAccountAuth:
-    def __init__(self, client_id, client_secret, timeout=DEFAULT_TIMEOUT_SECONDS, strict=False, request_post=requests.post):
+    def __init__(self, client_id, client_secret, timeout=DEFAULT_TIMEOUT_SECONDS, request_post=requests.post):
         self.client_id = client_id
         self.client_secret = client_secret
         self.timeout = timeout
-        self.strict = strict
         self.request_post = request_post
 
     def _map_http_error(self, status_code):

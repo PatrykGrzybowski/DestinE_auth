@@ -111,7 +111,7 @@ class TestLiveAuthIntegration(unittest.TestCase):
         self.assertIsInstance(desp_token, str)
         self.assertEqual(desp_token.count("."), 2)
 
-        dedl_token = DEDLAuth(desp_token, timeout=self.timeout, strict=True).get_token()
+        dedl_token = DEDLAuth(desp_token, timeout=self.timeout).get_token()
         self.assertIsInstance(dedl_token, str)
         self.assertEqual(dedl_token.count("."), 2)
 
@@ -132,7 +132,7 @@ class TestLiveAuthIntegration(unittest.TestCase):
             invalid_auth.get_desp_token(otp_code=self.otp_code)
 
         with self.assertRaises(TokenExchangeError):
-            DEDLAuth("not-a-valid-desp-token", timeout=self.timeout, strict=True).get_token()
+            DEDLAuth("not-a-valid-desp-token", timeout=self.timeout).get_token()
 
     def test_service_account_client_credentials_optional(self):
         if not self.dedl_client_id or not self.dedl_client_secret:
@@ -142,7 +142,6 @@ class TestLiveAuthIntegration(unittest.TestCase):
             client_id=self.dedl_client_id,
             client_secret=self.dedl_client_secret,
             timeout=self.timeout,
-            strict=True,
         ).get_token()
 
         self.assertIsInstance(token, str)

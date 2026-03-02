@@ -211,7 +211,7 @@ def run_staged_authentication(
 
     ##################################################
 
-    dedl = DEDLAuth(desp_token, strict=True)
+    dedl = DEDLAuth(desp_token)
     dedl_token = dedl.get_token()
     if not dedl_token:
         raise ValueError("Failed to obtain DEDL token in staged authentication flow.")
@@ -237,7 +237,6 @@ def run_service_account_authentication(
     dedl_token = DEDLServiceAccountAuth(
         client_id=client_id,
         client_secret=client_secret,
-        strict=True,
     ).get_token()
     if not dedl_token:
         raise ValueError(
