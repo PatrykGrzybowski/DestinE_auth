@@ -33,6 +33,7 @@ dev = [
   "ruff", 
   "black", 
   "mypy", 
+  "types-requests",
   "setuptools>=68",
 ]
 
@@ -43,3 +44,35 @@ exclude = [
   ".github*",
   "tokens*"
 ]
+
+[tool.ruff]
+target-version = "py38"
+line-length = 100
+exclude = [
+  "dist",
+  "build",
+  "destinelab.egg-info",
+  "tokens",
+]
+
+[tool.ruff.lint]
+select = ["E", "F", "I"]
+ignore = ["E501"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["destinelab"]
+
+[tool.mypy]
+python_version = "3.9"
+files = ["destinelab"]
+exclude = [
+  "^tests/",
+  "^tokens/",
+]
+ignore_missing_imports = true
+warn_unused_ignores = true
+warn_redundant_casts = true
+warn_return_any = true
+strict_equality = true
+check_untyped_defs = true
+pretty = true

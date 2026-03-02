@@ -3,6 +3,7 @@ import requests
 from .config import DEDL_AUDIENCE, DEDL_CLIENT_ID, DEDL_TOKEN_URL, DEFAULT_TIMEOUT_SECONDS
 from .errors import AuthNetworkError, InvalidCredentialsError, TokenExchangeError
 
+
 class DEDLAuth:
     def __init__(self, desp_access_token, timeout=DEFAULT_TIMEOUT_SECONDS, strict=False, request_post=requests.post):
         self.desp_access_token = desp_access_token

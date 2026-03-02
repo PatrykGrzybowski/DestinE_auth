@@ -1,8 +1,8 @@
 import logging
+from urllib.parse import parse_qs, urlparse
 
 import requests
 from lxml import html
-from urllib.parse import parse_qs, urlparse
 
 from .config import CLIENT_ID, DEFAULT_TIMEOUT_SECONDS, IAM_URL, REALM, SERVICE_URL
 from .errors import (

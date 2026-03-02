@@ -1,15 +1,15 @@
 #!/usr/bin/env python3
-from datetime import datetime, timezone
 import json
 import os
-from pathlib import Path
 import re
+from datetime import datetime, timezone
+from pathlib import Path
 from typing import Optional
 
-from dotenv import load_dotenv
 import jwt
+from dotenv import load_dotenv
 
-from destinelab import AuthHandler, DEDLServiceAccountAuth, DESPAuth, DEDLAuth
+from destinelab import AuthHandler, DEDLAuth, DEDLServiceAccountAuth, DESPAuth
 
 load_dotenv()  # loads .env into os.environ
 

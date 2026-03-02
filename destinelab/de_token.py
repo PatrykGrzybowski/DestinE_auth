@@ -2,9 +2,10 @@ import logging
 
 import jwt
 
+from .dedl_auth import DEDLAuth
+
 # Import DESPAuth and DEDLAuth here to ensure they are available
 from .desp_auth import DESPAuth
-from .dedl_auth import DEDLAuth
 
 logger = logging.getLogger(__name__)
 

@@ -4,11 +4,10 @@ from pathlib import Path
 from unittest.mock import patch
 
 from destinelab.config import DEFAULT_TIMEOUT_SECONDS
-from destinelab.dedl_auth import DEDLAuth, DEDLServiceAccountAuth
 from destinelab.de_token import AuthHandler
+from destinelab.dedl_auth import DEDLAuth, DEDLServiceAccountAuth
 from destinelab.desp_auth import DESPAuth
 from destinelab.errors import InvalidCredentialsError, OTPRequiredError, TokenExchangeError
-
 
 ENV_ALLOWLIST = {
     "DESP_USERNAME",

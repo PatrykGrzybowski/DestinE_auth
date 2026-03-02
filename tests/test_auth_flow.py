@@ -3,8 +3,8 @@ import unittest
 import jwt
 import requests
 
-from destinelab.dedl_auth import DEDLAuth, DEDLServiceAccountAuth
 from destinelab.de_token import AuthHandler
+from destinelab.dedl_auth import DEDLAuth, DEDLServiceAccountAuth
 from destinelab.desp_auth import DESPAuth
 from destinelab.errors import AuthNetworkError, InvalidCredentialsError, TokenExchangeError
 

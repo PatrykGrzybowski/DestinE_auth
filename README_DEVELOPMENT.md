@@ -27,6 +27,26 @@ uv pip install -e .[dev]
 
 ```
 
+## Static analysis (Ruff + MyPy)
+
+The project uses:
+
+- `ruff` for linting/import ordering.
+- `mypy` for static type checking of runtime package code (`destinelab/`).
+
+Run checks locally:
+
+```bash
+python -m ruff check .
+python -m mypy
+```
+
+Optional autofix for Ruff:
+
+```bash
+python -m ruff check . --fix
+```
+
 
 
 ## Packaging policy
