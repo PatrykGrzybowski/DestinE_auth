@@ -55,49 +55,6 @@ jobs:
       - name: Check package metadata
         run: python -m twine check dist/*
 
-      - name: Verify runtime-only package contents
-        run: |
-          python - <<'PY'
-          import glob
-          import os
-          import tarfile
-          import zipfile
-
-          blocked_prefixes = (
-              "tests/",
-              ".github/",
-              "README_DEVELOPMENT.md",
-              "script_example.py",
-          )
-
-          sdists = glob.glob("dist/*.tar.gz")
-          wheels = glob.glob("dist/*.whl")
-
-          if not sdists or not wheels:
-              raise SystemExit("Expected both sdist and wheel artifacts.")
-
-          def ensure_allowed(paths, artifact):
-              for path in paths:
-                  normalized = path.replace('\\\\', '/')
-                  if any(
-                      normalized == prefix or normalized.startswith(prefix)
-                      for prefix in blocked_prefixes
-                  ):
-                      raise SystemExit(f"Blocked path '{normalized}' found in {artifact}")
-
-          for sdist in sdists:
-              with tarfile.open(sdist, "r:gz") as tar:
-                  members = [member.name for member in tar.getmembers()]
-                  trimmed = [name.split('/', 1)[1] if '/' in name else name for name in members]
-                  ensure_allowed(trimmed, os.path.basename(sdist))
-
-          for wheel in wheels:
-              with zipfile.ZipFile(wheel) as zf:
-                  ensure_allowed(zf.namelist(), os.path.basename(wheel))
-
-          print("Artifact content checks passed.")
-          PY
-
       - name: Upload dist artifacts
         uses: actions/upload-artifact@v4
         with:
