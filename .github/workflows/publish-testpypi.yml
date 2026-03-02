@@ -2,9 +2,9 @@ name: Publish to TestPyPI
 
 on:
   push:
-    branches-ignore:
-      - main
-      - master
+    tags:
+      - "test-*"
+      - "rc-*"
 
 jobs:
   test-matrix:

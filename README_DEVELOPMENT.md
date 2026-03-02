@@ -100,14 +100,15 @@ For each retrieved DEDL token, the script prints expiry, roles, and DT access st
 
 - `CI` workflow runs on every push and pull request.
 - Unit tests run on Python `3.8`, `3.9`, `3.10`, `3.11`, and `3.12`.
+- Static analysis runs in CI on Python `3.12` with `ruff` and `mypy`.
 - Build checks verify artifact metadata and fail if excluded dev/test files appear in distributions.
-- Pushes to any non-`main`/non-`master` branch publish to TestPyPI.
-- Version tags matching `v*` run production publish validation, but the final upload to PyPI is intentionally disabled in the workflow.
+- Tags matching `test-*` or `rc-*` publish to TestPyPI.
+- Tags matching `v*` publish to production PyPI.
 
 Required repository secrets:
 
 - `TEST_PYPI_TOKEN` for TestPyPI publishing.
-- `PYPI_TOKEN` is only needed if production PyPI upload is re-enabled.
+- `PYPI_TOKEN` for production PyPI publishing.
 
 ## Local live integration tests
 
