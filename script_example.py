@@ -152,9 +152,10 @@ def _print_info_token(
     _print_roles(token, token_label)
 
     if is_print_full_token:
-        print("Warning: printing full token to console.")
+        print("Warning: full token output is enabled for local debugging and may expose secrets.")
         _print_decoded_token(token, token_label)
-        _write_full_token_dump(token, username, "dedl")
+        token_kind = "desp" if token_label.lower().startswith("desp") else "dedl"
+        _write_full_token_dump(token, username, token_kind)
 
     print(f"Standard success. DEDL token: {_display_token(token, is_print_full_token)}")
 
@@ -253,7 +254,7 @@ def run_service_account_authentication(
 if __name__ == "__main__":
 
     RUN_MODE = "staged"  # "standard" | "staged" | "service-account"
-    FULL_TOKEN_OUTPUT = True
+    FULL_TOKEN_OUTPUT = False
 
     # If we are running in standard mode we need DESP credentials.
     if RUN_MODE in ("standard", "staged"):

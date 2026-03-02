@@ -90,19 +90,30 @@ class TestDESPAuth(unittest.TestCase):
 
 
 class TestDEDLAuth(unittest.TestCase):
-    def test_non_200_returns_none_by_default(self):
+    def test_non_200_raises_token_exchange_error(self):
         def fake_post(*args, **kwargs):
             return FakeResponse(status_code=500, json_data={"error": "server_error"})
 
         auth = DEDLAuth("desp-token", request_post=fake_post)
-        with self.assertLogs("destinelab.dedl_auth", level="WARNING"):
-            self.assertIsNone(auth.get_token())
+        with self.assertRaises(TokenExchangeError) as context:
+            auth.get_token()
 
-    def test_non_200_can_raise_in_strict_mode(self):
+        self.assertIn("HTTP 500", str(context.exception))
+        self.assertIn("Verify DESP token validity", str(context.exception))
+
+    def test_network_error_raises_auth_network_error(self):
         def fake_post(*args, **kwargs):
-            return FakeResponse(status_code=500, json_data={"error": "server_error"})
+            raise requests.RequestException("network down")
 
-        auth = DEDLAuth("desp-token", strict=True, request_post=fake_post)
+        auth = DEDLAuth("desp-token", request_post=fake_post)
+        with self.assertRaises(AuthNetworkError):
+            auth.get_token()
+
+    def test_missing_access_token_raises_token_exchange_error(self):
+        def fake_post(*args, **kwargs):
+            return FakeResponse(status_code=200, json_data={"token_type": "Bearer"})
+
+        auth = DEDLAuth("desp-token", request_post=fake_post)
         with self.assertRaises(TokenExchangeError):
             auth.get_token()
 
@@ -115,48 +126,49 @@ class TestDEDLServiceAccountAuth(unittest.TestCase):
         auth = DEDLServiceAccountAuth("client-id", "client-secret", request_post=fake_post)
         self.assertEqual(auth.get_token(), "dedl-sa-token")
 
-    def test_non_200_returns_none_by_default(self):
+    def test_non_200_raises_token_exchange_error(self):
         def fake_post(*args, **kwargs):
             return FakeResponse(status_code=500, json_data={"error": "server_error"})
 
         auth = DEDLServiceAccountAuth("client-id", "client-secret", request_post=fake_post)
-        with self.assertLogs("destinelab.dedl_auth", level="WARNING"):
-            self.assertIsNone(auth.get_token())
+        with self.assertRaises(TokenExchangeError) as context:
+            auth.get_token()
 
-    def test_invalid_credentials_raise_specific_error_in_strict_mode(self):
+        self.assertIn("HTTP 500", str(context.exception))
+
+    def test_invalid_credentials_raise_specific_error(self):
         def fake_post(*args, **kwargs):
             return FakeResponse(status_code=401, json_data={"error": "invalid_client"})
 
         auth = DEDLServiceAccountAuth(
             "client-id",
             "wrong-secret",
-            strict=True,
             request_post=fake_post,
         )
-        with self.assertRaises(InvalidCredentialsError):
+        with self.assertRaises(InvalidCredentialsError) as context:
             auth.get_token()
 
-    def test_network_error_can_raise_in_strict_mode(self):
+        self.assertIn("Verify DEDL client credentials", str(context.exception))
+
+    def test_network_error_raises_auth_network_error(self):
         def fake_post(*args, **kwargs):
             raise requests.RequestException("network down")
 
         auth = DEDLServiceAccountAuth(
             "client-id",
             "client-secret",
-            strict=True,
             request_post=fake_post,
         )
         with self.assertRaises(AuthNetworkError):
             auth.get_token()
 
-    def test_missing_access_token_can_raise_in_strict_mode(self):
+    def test_missing_access_token_raises_token_exchange_error(self):
         def fake_post(*args, **kwargs):
             return FakeResponse(status_code=200, json_data={"token_type": "Bearer"})
 
         auth = DEDLServiceAccountAuth(
             "client-id",
             "client-secret",
-            strict=True,
             request_post=fake_post,
         )
         with self.assertRaises(TokenExchangeError):
@@ -187,29 +199,6 @@ class TestAuthHandler(unittest.TestCase):
             dedl_auth_class=FakeDEDLAuth,
         )
         self.assertEqual(handler.get_token(), "dedl-token")
-
-    def test_get_token_uses_service_account_when_credentials_provided(self):
-        class FakeDESPAuth:
-            def __init__(self, username, password):
-                raise AssertionError("DESP auth should not run in service-account mode")
-
-        class FakeDEDLServiceAccountAuth:
-            def __init__(self, client_id, client_secret):
-                self.client_id = client_id
-                self.client_secret = client_secret
-
-            def get_token(self):
-                return "dedl-sa-token"
-
-        handler = AuthHandler(
-            "user",
-            "pass",
-            client_id="client-id",
-            client_secret="client-secret",
-            desp_auth_class=FakeDESPAuth,
-            dedl_service_account_auth_class=FakeDEDLServiceAccountAuth,
-        )
-        self.assertEqual(handler.get_token(), "dedl-sa-token")
 
     def test_roles_and_access_checks(self):
         handler = AuthHandler("user", "pass")

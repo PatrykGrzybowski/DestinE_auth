@@ -63,7 +63,7 @@ DEDL_CLIENT_SECRET=optional_service_account_client_secret
 ```
 
 2. Open `script_example.py` and set:
-- `RUN_MODE` to one of `e2e`, `staged`, `service-account`.
+- `RUN_MODE` to one of `standard`, `staged`, `service-account`.
 - `FULL_TOKEN_OUTPUT` to `True` or `False`.
 
 3. Run the script:
@@ -74,7 +74,7 @@ python script_example.py
 
 `DESP_USERNAME` and `DESP_PASSWORD` are mandatory and must be provided via `.env` (or exported environment variables); the script raises an error if they are missing.
 For each retrieved DEDL token, the script prints expiry, roles, and DT access status.
-When `FULL_TOKEN_OUTPUT=True`, it also prints full tokens and writes decoded token dumps to `tokens/`.
+`FULL_TOKEN_OUTPUT` is `False` by default for safer local usage. When explicitly set to `True`, it also prints full tokens and writes decoded token dumps to `tokens/`.
 
 ## CI and release flow
 
@@ -82,12 +82,12 @@ When `FULL_TOKEN_OUTPUT=True`, it also prints full tokens and writes decoded tok
 - Unit tests run on Python `3.8`, `3.9`, `3.10`, `3.11`, and `3.12`.
 - Build checks verify artifact metadata and fail if excluded dev/test files appear in distributions.
 - Pushes to any non-`main`/non-`master` branch publish to TestPyPI.
-- Version tags matching `v*` publish to PyPI.
+- Version tags matching `v*` run production publish validation, but the final upload to PyPI is intentionally disabled in the workflow.
 
 Required repository secrets:
 
 - `TEST_PYPI_TOKEN` for TestPyPI publishing.
-- `PYPI_TOKEN` for production PyPI publishing.
+- `PYPI_TOKEN` is only needed if production PyPI upload is re-enabled.
 
 ## Local live integration tests
 
@@ -131,5 +131,6 @@ These tests are skipped by default in CI. To force them in CI, set:
 
 ## Security notes for contributors
 
-- Never print credentials, OTP codes, or raw JWTs.
+- Never print credentials or OTP codes.
+- Raw JWT output is allowed only for explicit local debugging opt-in (`FULL_TOKEN_OUTPUT=True`) and must not be enabled by default.
 - Keep `.env` local only.

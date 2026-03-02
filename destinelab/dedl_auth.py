@@ -1,11 +1,7 @@
-import logging
-
 import requests
 
 from .config import DEDL_AUDIENCE, DEDL_CLIENT_ID, DEDL_TOKEN_URL, DEFAULT_TIMEOUT_SECONDS
 from .errors import AuthNetworkError, InvalidCredentialsError, TokenExchangeError
-
-logger = logging.getLogger(__name__)
 
 class DEDLAuth:
     def __init__(self, desp_access_token, timeout=DEFAULT_TIMEOUT_SECONDS, strict=False, request_post=requests.post):
@@ -13,13 +9,6 @@ class DEDLAuth:
         self.timeout = timeout
         self.strict = strict
         self.request_post = request_post
-
-    def _handle_error(self, message, error_class):
-        if self.strict:
-            raise error_class(message)
-
-        logger.warning(message)
-        return None
 
     def get_token(self):
         data = { 
@@ -34,18 +23,17 @@ class DEDLAuth:
         try:
             response = self.request_post(DEDL_TOKEN_URL, data=data, timeout=self.timeout)
         except requests.RequestException:
-            return self._handle_error("Unable to reach DEDL identity provider for token exchange.", AuthNetworkError)
+            raise AuthNetworkError("Unable to reach DEDL identity provider for token exchange.")
 
         if response.status_code == 200: 
             dedl_token = response.json().get("access_token")
             if not dedl_token:
-                return self._handle_error("DEDL token response did not include an access token.", TokenExchangeError)
+                raise TokenExchangeError("DEDL token response did not include an access token.")
 
             return dedl_token
 
-        return self._handle_error(
-            f"Error obtaining DEDL access token (HTTP {response.status_code}).",
-            TokenExchangeError,
+        raise TokenExchangeError(
+            f"Error obtaining DEDL access token (HTTP {response.status_code}). Verify DESP token validity and DEDL availability.",
         )
 
 
@@ -56,13 +44,6 @@ class DEDLServiceAccountAuth:
         self.timeout = timeout
         self.strict = strict
         self.request_post = request_post
-
-    def _handle_error(self, message, error_class):
-        if self.strict:
-            raise error_class(message)
-
-        logger.warning(message)
-        return None
 
     def _map_http_error(self, status_code):
         if status_code in (400, 401, 403):
@@ -87,20 +68,18 @@ class DEDLServiceAccountAuth:
         try:
             response = self.request_post(DEDL_TOKEN_URL, data=data, timeout=self.timeout)
         except requests.RequestException:
-            return self._handle_error(
+            raise AuthNetworkError(
                 "Unable to reach DEDL identity provider for service account authentication.",
-                AuthNetworkError,
             )
 
         if response.status_code == 200:
             dedl_token = response.json().get("access_token")
             if not dedl_token:
-                return self._handle_error(
+                raise TokenExchangeError(
                     "DEDL token response did not include an access token.",
-                    TokenExchangeError,
                 )
 
             return dedl_token
 
         message, error_class = self._map_http_error(response.status_code)
-        return self._handle_error(message, error_class)
+        raise error_class(message)

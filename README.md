@@ -20,7 +20,7 @@ Note: Python compatibility: 3.8+
 
 Repository demo and contributor workflows (including the interactive demo script) are documented in `README_DEVELOPMENT.md`.
 
-### Standart usage
+### Standard usage
 
 ```python
 from destinelab import AuthHandler
@@ -42,21 +42,6 @@ dedl_token = DEDLServiceAccountAuth(
 	client_id="YOUR_CLIENT_ID",
 	client_secret="YOUR_CLIENT_SECRET",
 ).get_token()
-
-```
-
-### End-to-end with automatic service account mode
-
-```python
-from destinelab import AuthHandler
-
-handler = AuthHandler(
-	"DESP_USERNAME",
-	"DESP_PASSWORD",
-	client_id="YOUR_CLIENT_ID",
-	client_secret="YOUR_CLIENT_SECRET",
-)
-dedl_token = handler.get_token()
 
 ```
 
@@ -91,10 +76,9 @@ dedl_token = DEDLAuth(desp_token).get_token()
 ## Error behavior
 
 - `DESPAuth.get_desp_token()` raises explicit auth errors (for example invalid credentials, OTP required, network failures, and DESP token exchange failures).
-- `DEDLAuth.get_token()` returns `None` by default when exchange fails and logs a warning.
-- `DEDLAuth(..., strict=True).get_token()` raises explicit exceptions instead of returning `None`.
-- `DEDLServiceAccountAuth.get_token()` supports the same contract: default `strict=False` returns `None` with warning; `strict=True` raises explicit exceptions.
-- `AuthHandler.get_token()` uses service-account mode when both `client_id` and `client_secret` are provided; otherwise it composes `DESPAuth -> DEDLAuth` with default `DEDLAuth` behavior.
+- `DEDLAuth.get_token()` raises explicit exceptions on exchange failure.
+- `DEDLServiceAccountAuth.get_token()` raises explicit exceptions on service-account authentication failure.
+- `AuthHandler.get_token()` composes `DESPAuth -> DEDLAuth` using DESP user credentials.
 
 
 ## License
