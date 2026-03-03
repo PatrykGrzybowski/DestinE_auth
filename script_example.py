@@ -182,6 +182,13 @@ def run_standard_authentication(
         dedl_token, "DEDL token", username, is_print_full_token=is_print_full_token
     )
 
+    # Demonstrate that cached token is used on subsequent call to get_token()
+    dedl_token_2 = handler.get_token()
+    if dedl_token != dedl_token_2:
+        print("Warning: subsequent call to get_token() did not return the same token, which may indicate that caching is not working as expected.")
+    else:
+        print("Subsequent call to get_token() returned the same token, indicating that caching is working as expected.")
+
     _print_banner("END: Running standard authentication flow")
 
 
@@ -252,7 +259,7 @@ def run_service_account_authentication(
 
 if __name__ == "__main__":
 
-    RUN_MODE = "staged"  # "standard" | "staged" | "service-account"
+    RUN_MODE = "standard"  # "standard" | "staged" | "service-account"
     FULL_TOKEN_OUTPUT = False
 
     # If we are running in standard mode we need DESP credentials.
