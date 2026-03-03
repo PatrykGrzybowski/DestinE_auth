@@ -42,8 +42,15 @@ class AuthHandler:
     def get_token(self):
         """Performs the full authentication flow to retrieve a DEDL token."""
 
-        if self.dedl_access_token and self.token_validator(self.dedl_access_token):
-            return self.dedl_access_token
+        if self.dedl_access_token:
+            try:
+                if self.token_validator(self.dedl_access_token):
+                    return self.dedl_access_token
+            except Exception as exc:
+                logger.warning(
+                    "Cached DEDL token validation failed due to validator backend issue; continuing with refresh flow (%s).",
+                    type(exc).__name__,
+                )
 
         # Get DESP auth token
         desp_auth = self.desp_auth_class(self.username, self.password)

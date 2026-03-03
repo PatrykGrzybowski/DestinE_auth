@@ -1,3 +1,5 @@
+import logging
+
 import jwt
 from jwt import PyJWKClient
 from keycloak import KeycloakOpenID
@@ -8,6 +10,9 @@ from ..config import (
     DEDL_KEYCLOAK_SERVER_URL,
     DEFAULT_TIMEOUT_SECONDS,
 )
+
+
+logger = logging.getLogger(__name__)
 
 
 def is_dedl_token_valid(
@@ -49,13 +54,23 @@ def is_dedl_token_valid(
         return True
 
     except jwt.ExpiredSignatureError as e:
-        print(f"Token expired: {e}")
+        logger.debug("DEDL token validation failed: token expired (%s)", type(e).__name__)
         return False
 
     except jwt.PyJWTError as e:
-        print(f"JWT validation error: {type(e).__name__}: {e}")
+        logger.debug("DEDL token validation failed: JWT error (%s)", type(e).__name__)
         return False
 
     except (KeyError, TypeError, ValueError) as e:
-        print(f"Keycloak metadata error: {e}")
-        return False
+        logger.warning(
+            "DEDL token validation could not complete due to metadata/parsing error (%s)",
+            type(e).__name__,
+        )
+        raise RuntimeError("Unable to validate DEDL token due to Keycloak metadata error.") from e
+
+    except Exception as e:
+        logger.warning(
+            "DEDL token validation could not complete due to unexpected error (%s)",
+            type(e).__name__,
+        )
+        raise RuntimeError("Unable to validate DEDL token due to validator backend error.") from e

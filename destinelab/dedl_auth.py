@@ -26,7 +26,14 @@ class DEDLAuth:
             raise AuthNetworkError("Unable to reach DEDL identity provider for token exchange.")
 
         if response.status_code == 200: 
-            dedl_token = response.json().get("access_token")
+            try:
+                response_payload = response.json()
+            except ValueError as exc:
+                raise TokenExchangeError(
+                    "DEDL token response could not be parsed. Retry later or verify DEDL identity provider availability."
+                ) from exc
+
+            dedl_token = response_payload.get("access_token")
             if not dedl_token:
                 raise TokenExchangeError("DEDL token response did not include an access token.")
 
@@ -72,7 +79,14 @@ class DEDLServiceAccountAuth:
             )
 
         if response.status_code == 200:
-            dedl_token = response.json().get("access_token")
+            try:
+                response_payload = response.json()
+            except ValueError as exc:
+                raise TokenExchangeError(
+                    "DEDL token response could not be parsed. Retry later or verify DEDL identity provider availability."
+                ) from exc
+
+            dedl_token = response_payload.get("access_token")
             if not dedl_token:
                 raise TokenExchangeError(
                     "DEDL token response did not include an access token.",

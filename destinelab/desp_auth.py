@@ -266,7 +266,14 @@ class DESPAuth:
 
             # Finally, we parse the token response to extract the access token.
             # We also include error handling to ensure that if the expected access token is not present in the response, we raise an appropriate error.
-            token = response.json().get("access_token")
+            try:
+                response_payload = response.json()
+            except ValueError as exc:
+                raise TokenExchangeError(
+                    "DESP token response could not be parsed. Retry later or verify identity provider availability."
+                ) from exc
+
+            token = response_payload.get("access_token")
             if not token:
                 raise TokenExchangeError(
                     "DESP token response did not contain an access token."

@@ -1,4 +1,5 @@
 import unittest
+from unittest.mock import patch
 
 import jwt
 import requests
@@ -11,13 +12,23 @@ from destinelab.tools.token_tools import is_dedl_token_valid
 
 
 class FakeResponse:
-    def __init__(self, status_code=200, content="", headers=None, json_data=None):
+    def __init__(
+        self,
+        status_code=200,
+        content="",
+        headers=None,
+        json_data=None,
+        json_error=None,
+    ):
         self.status_code = status_code
         self.content = content.encode() if isinstance(content, str) else content
         self.headers = headers or {}
         self._json_data = json_data or {}
+        self._json_error = json_error
 
     def json(self):
+        if self._json_error is not None:
+            raise self._json_error
         return self._json_data
 
 
@@ -89,6 +100,23 @@ class TestDESPAuth(unittest.TestCase):
         with self.assertRaises(InvalidCredentialsError):
             auth.get_desp_token()
 
+    def test_malformed_token_response_raises_token_exchange_error(self):
+        session = FakeSession(
+            get_responses=[
+                FakeResponse(content='<html><body><form action="https://auth.example/login"></form></body></html>')
+            ],
+            post_responses=[
+                FakeResponse(status_code=302, headers={"Location": "https://service/callback?code=AUTHCODE"}),
+                FakeResponse(status_code=200, json_error=ValueError("invalid json")),
+            ],
+        )
+
+        auth = DESPAuth("user", "pass", session_factory=lambda: session)
+        with self.assertRaises(TokenExchangeError) as context:
+            auth.get_desp_token()
+
+        self.assertIn("could not be parsed", str(context.exception))
+
 
 class TestDEDLAuth(unittest.TestCase):
     def test_non_200_raises_token_exchange_error(self):
@@ -117,6 +145,16 @@ class TestDEDLAuth(unittest.TestCase):
         auth = DEDLAuth("desp-token", request_post=fake_post)
         with self.assertRaises(TokenExchangeError):
             auth.get_token()
+
+    def test_malformed_json_raises_token_exchange_error(self):
+        def fake_post(*args, **kwargs):
+            return FakeResponse(status_code=200, json_error=ValueError("invalid json"))
+
+        auth = DEDLAuth("desp-token", request_post=fake_post)
+        with self.assertRaises(TokenExchangeError) as context:
+            auth.get_token()
+
+        self.assertIn("could not be parsed", str(context.exception))
 
 
 class TestDEDLServiceAccountAuth(unittest.TestCase):
@@ -175,6 +213,20 @@ class TestDEDLServiceAccountAuth(unittest.TestCase):
         with self.assertRaises(TokenExchangeError):
             auth.get_token()
 
+    def test_service_account_malformed_json_raises_token_exchange_error(self):
+        def fake_post(*args, **kwargs):
+            return FakeResponse(status_code=200, json_error=ValueError("invalid json"))
+
+        auth = DEDLServiceAccountAuth(
+            "client-id",
+            "client-secret",
+            request_post=fake_post,
+        )
+        with self.assertRaises(TokenExchangeError) as context:
+            auth.get_token()
+
+        self.assertIn("could not be parsed", str(context.exception))
+
 
 class TestTokenTools(unittest.TestCase):
     def test_is_dedl_token_valid_returns_false_for_invalid_input(self):
@@ -199,13 +251,10 @@ class TestTokenTools(unittest.TestCase):
             def get_signing_key_from_jwt(self, token):
                 return FakeSigningKey()
 
-        original_decode = jwt.decode
-
         def fake_decode(token, key, algorithms, options):
             return {"sub": "user"}
 
-        jwt.decode = fake_decode
-        try:
+        with patch("destinelab.tools.token_tools.jwt.decode", side_effect=fake_decode):
             self.assertTrue(
                 is_dedl_token_valid(
                     "valid-token",
@@ -213,8 +262,6 @@ class TestTokenTools(unittest.TestCase):
                     jwk_client_class=FakeJWKClient,
                 )
             )
-        finally:
-            jwt.decode = original_decode
 
     def test_is_dedl_token_valid_false_when_jwt_decode_fails(self):
         class FakeKeycloakOpenID:
@@ -234,13 +281,10 @@ class TestTokenTools(unittest.TestCase):
             def get_signing_key_from_jwt(self, token):
                 return FakeSigningKey()
 
-        original_decode = jwt.decode
-
         def fake_decode(token, key, algorithms, options):
             raise jwt.InvalidTokenError("bad token")
 
-        jwt.decode = fake_decode
-        try:
+        with patch("destinelab.tools.token_tools.jwt.decode", side_effect=fake_decode):
             self.assertFalse(
                 is_dedl_token_valid(
                     "invalid-token",
@@ -248,8 +292,22 @@ class TestTokenTools(unittest.TestCase):
                     jwk_client_class=FakeJWKClient,
                 )
             )
-        finally:
-            jwt.decode = original_decode
+
+    def test_is_dedl_token_valid_raises_runtime_error_on_metadata_failure(self):
+        class FakeKeycloakOpenID:
+            def __init__(self, **kwargs):
+                pass
+
+            def well_known(self):
+                return {}
+
+        with self.assertRaises(RuntimeError) as context:
+            is_dedl_token_valid(
+                "token",
+                keycloak_openid_class=FakeKeycloakOpenID,
+            )
+
+        self.assertIn("Unable to validate DEDL token", str(context.exception))
 
 
 class TestAuthHandler(unittest.TestCase):
@@ -330,6 +388,42 @@ class TestAuthHandler(unittest.TestCase):
         self.assertEqual(calls["desp"], 1)
         self.assertEqual(calls["dedl"], 1)
         self.assertEqual(handler.dedl_access_token, "new-dedl-token")
+
+    def test_get_token_refreshes_when_validator_backend_fails(self):
+        calls = {"desp": 0, "dedl": 0}
+
+        class FakeDESPAuth:
+            def __init__(self, username, password):
+                self.username = username
+                self.password = password
+
+            def get_desp_token(self):
+                calls["desp"] += 1
+                return "new-desp-token"
+
+        class FakeDEDLAuth:
+            def __init__(self, desp_access_token):
+                self.desp_access_token = desp_access_token
+
+            def get_token(self):
+                calls["dedl"] += 1
+                return "new-dedl-token"
+
+        def failing_validator(token):
+            raise RuntimeError("validator backend down")
+
+        handler = AuthHandler(
+            "user",
+            "pass",
+            desp_auth_class=FakeDESPAuth,
+            dedl_auth_class=FakeDEDLAuth,
+            token_validator=failing_validator,
+        )
+        handler.dedl_access_token = "cached-token"
+
+        self.assertEqual(handler.get_token(), "new-dedl-token")
+        self.assertEqual(calls["desp"], 1)
+        self.assertEqual(calls["dedl"], 1)
 
     def test_roles_and_access_checks(self):
         handler = AuthHandler("user", "pass")

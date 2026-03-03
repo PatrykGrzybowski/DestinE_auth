@@ -27,6 +27,18 @@ uv pip install -e .[dev]
 
 ```
 
+## Logging during development
+
+The runtime library uses package-level loggers and avoids printing secrets.
+To enable debug-level logs in local experiments:
+
+```python
+import logging
+from destinelab import configure_logging
+
+configure_logging(level=logging.DEBUG)
+```
+
 ## Static analysis (Ruff + MyPy)
 
 The project uses:
@@ -101,7 +113,7 @@ For each retrieved DEDL token, the script prints expiry, roles, and DT access st
 - `CI` workflow runs on every push and pull request.
 - Unit tests run on Python `3.8`, `3.9`, `3.10`, `3.11`, and `3.12`.
 - Static analysis runs in CI on Python `3.12` with `ruff` and `mypy`.
-- Build checks verify artifact metadata and fail if excluded dev/test files appear in distributions.
+- Build checks verify artifact metadata with `twine check`.
 - Tags matching `test-*` or `rc-*` publish to TestPyPI.
 - Tags matching `v*` publish to production PyPI.
 

@@ -32,6 +32,20 @@ auth_headers = {"Authorization": f"Bearer {dedl_token}"} # Example of how to use
 
 ```
 
+### Logging and debug level
+
+By default, the package is quiet and does not configure global logging.
+To enable debug output for troubleshooting, configure the package logger explicitly:
+
+```python
+import logging
+from destinelab import configure_logging
+
+configure_logging(level=logging.DEBUG)
+```
+
+You can set `INFO`, `WARNING`, `ERROR`, or `DEBUG` depending on how much detail you need.
+
 ### Service account usage (client credentials)
 
 ```python
@@ -79,6 +93,7 @@ dedl_token = DEDLAuth(desp_token).get_token()
 - `DEDLAuth.get_token()` raises explicit exceptions on exchange failure.
 - `DEDLServiceAccountAuth.get_token()` raises explicit exceptions on service-account authentication failure.
 - `AuthHandler.get_token()` first checks whether an already stored DEDL token is still valid (verified against DEDL Keycloak JWKS). If valid, it is returned immediately; otherwise it composes `DESPAuth -> DEDLAuth` using DESP user credentials.
+- If cached-token validation cannot be completed because the validator backend is unavailable (for example metadata/JWKS lookup issues), `AuthHandler.get_token()` logs a warning and continues with a refresh flow (`DESPAuth -> DEDLAuth`).
 
 
 ## License
