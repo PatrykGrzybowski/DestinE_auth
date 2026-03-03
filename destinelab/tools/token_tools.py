@@ -11,7 +11,6 @@ from ..config import (
     DEFAULT_TIMEOUT_SECONDS,
 )
 
-
 logger = logging.getLogger(__name__)
 
 
