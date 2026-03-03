@@ -7,6 +7,7 @@ from destinelab.de_token import AuthHandler
 from destinelab.dedl_auth import DEDLAuth, DEDLServiceAccountAuth
 from destinelab.desp_auth import DESPAuth
 from destinelab.errors import AuthNetworkError, InvalidCredentialsError, TokenExchangeError
+from destinelab.tools.token_tools import is_dedl_token_valid
 
 
 class FakeResponse:
@@ -175,6 +176,82 @@ class TestDEDLServiceAccountAuth(unittest.TestCase):
             auth.get_token()
 
 
+class TestTokenTools(unittest.TestCase):
+    def test_is_dedl_token_valid_returns_false_for_invalid_input(self):
+        self.assertFalse(is_dedl_token_valid(None))
+        self.assertFalse(is_dedl_token_valid(""))
+
+    def test_is_dedl_token_valid_true_when_signature_and_claims_decode(self):
+        class FakeKeycloakOpenID:
+            def __init__(self, **kwargs):
+                pass
+
+            def well_known(self):
+                return {"jwks_uri": "https://identity.example/auth/realms/dedl/protocol/openid-connect/certs"}
+
+        class FakeSigningKey:
+            key = "public-key"
+
+        class FakeJWKClient:
+            def __init__(self, jwks_uri):
+                self.jwks_uri = jwks_uri
+
+            def get_signing_key_from_jwt(self, token):
+                return FakeSigningKey()
+
+        original_decode = jwt.decode
+
+        def fake_decode(token, key, algorithms, options):
+            return {"sub": "user"}
+
+        jwt.decode = fake_decode
+        try:
+            self.assertTrue(
+                is_dedl_token_valid(
+                    "valid-token",
+                    keycloak_openid_class=FakeKeycloakOpenID,
+                    jwk_client_class=FakeJWKClient,
+                )
+            )
+        finally:
+            jwt.decode = original_decode
+
+    def test_is_dedl_token_valid_false_when_jwt_decode_fails(self):
+        class FakeKeycloakOpenID:
+            def __init__(self, **kwargs):
+                pass
+
+            def well_known(self):
+                return {"jwks_uri": "https://identity.example/auth/realms/dedl/protocol/openid-connect/certs"}
+
+        class FakeSigningKey:
+            key = "public-key"
+
+        class FakeJWKClient:
+            def __init__(self, jwks_uri):
+                self.jwks_uri = jwks_uri
+
+            def get_signing_key_from_jwt(self, token):
+                return FakeSigningKey()
+
+        original_decode = jwt.decode
+
+        def fake_decode(token, key, algorithms, options):
+            raise jwt.InvalidTokenError("bad token")
+
+        jwt.decode = fake_decode
+        try:
+            self.assertFalse(
+                is_dedl_token_valid(
+                    "invalid-token",
+                    keycloak_openid_class=FakeKeycloakOpenID,
+                    jwk_client_class=FakeJWKClient,
+                )
+            )
+        finally:
+            jwt.decode = original_decode
+
+
 class TestAuthHandler(unittest.TestCase):
     def test_get_token_composes_auth_steps(self):
         class FakeDESPAuth:
@@ -199,6 +276,60 @@ class TestAuthHandler(unittest.TestCase):
             dedl_auth_class=FakeDEDLAuth,
         )
         self.assertEqual(handler.get_token(), "dedl-token")
+
+    def test_get_token_reuses_cached_dedl_token_when_valid(self):
+        class FailIfCalledDESPAuth:
+            def __init__(self, username, password):
+                raise AssertionError("DESP auth should not be called for valid cached token.")
+
+        class FailIfCalledDEDLAuth:
+            def __init__(self, desp_access_token):
+                raise AssertionError("DEDL exchange should not be called for valid cached token.")
+
+        handler = AuthHandler(
+            "user",
+            "pass",
+            desp_auth_class=FailIfCalledDESPAuth,
+            dedl_auth_class=FailIfCalledDEDLAuth,
+            token_validator=lambda token: token == "cached-valid-token",
+        )
+        handler.dedl_access_token = "cached-valid-token"
+
+        self.assertEqual(handler.get_token(), "cached-valid-token")
+
+    def test_get_token_refreshes_when_cached_token_is_invalid(self):
+        calls = {"desp": 0, "dedl": 0}
+
+        class FakeDESPAuth:
+            def __init__(self, username, password):
+                self.username = username
+                self.password = password
+
+            def get_desp_token(self):
+                calls["desp"] += 1
+                return "new-desp-token"
+
+        class FakeDEDLAuth:
+            def __init__(self, desp_access_token):
+                self.desp_access_token = desp_access_token
+
+            def get_token(self):
+                calls["dedl"] += 1
+                return "new-dedl-token"
+
+        handler = AuthHandler(
+            "user",
+            "pass",
+            desp_auth_class=FakeDESPAuth,
+            dedl_auth_class=FakeDEDLAuth,
+            token_validator=lambda token: False,
+        )
+        handler.dedl_access_token = "expired-token"
+
+        self.assertEqual(handler.get_token(), "new-dedl-token")
+        self.assertEqual(calls["desp"], 1)
+        self.assertEqual(calls["dedl"], 1)
+        self.assertEqual(handler.dedl_access_token, "new-dedl-token")
 
     def test_roles_and_access_checks(self):
         handler = AuthHandler("user", "pass")

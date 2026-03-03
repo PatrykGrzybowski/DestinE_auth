@@ -78,7 +78,7 @@ dedl_token = DEDLAuth(desp_token).get_token()
 - `DESPAuth.get_desp_token()` raises explicit auth errors (for example invalid credentials, OTP required, network failures, and DESP token exchange failures).
 - `DEDLAuth.get_token()` raises explicit exceptions on exchange failure.
 - `DEDLServiceAccountAuth.get_token()` raises explicit exceptions on service-account authentication failure.
-- `AuthHandler.get_token()` composes `DESPAuth -> DEDLAuth` using DESP user credentials.
+- `AuthHandler.get_token()` first checks whether an already stored DEDL token is still valid (verified against DEDL Keycloak JWKS). If valid, it is returned immediately; otherwise it composes `DESPAuth -> DEDLAuth` using DESP user credentials.
 
 
 ## License

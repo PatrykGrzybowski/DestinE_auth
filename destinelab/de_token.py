@@ -6,13 +6,19 @@ from .dedl_auth import DEDLAuth
 
 # Import DESPAuth and DEDLAuth here to ensure they are available
 from .desp_auth import DESPAuth
+from .tools.token_tools import is_dedl_token_valid
 
 logger = logging.getLogger(__name__)
 
 
 class AuthHandler:
     def __init__(
-        self, username, password, desp_auth_class=DESPAuth, dedl_auth_class=DEDLAuth
+        self,
+        username,
+        password,
+        desp_auth_class=DESPAuth,
+        dedl_auth_class=DEDLAuth,
+        token_validator=is_dedl_token_valid,
     ):
         """
         Handles the overall authentication flow to obtain a DEDL token using DESP credentials.
@@ -30,9 +36,13 @@ class AuthHandler:
         self.dedl_access_token = None
         self.desp_auth_class = desp_auth_class
         self.dedl_auth_class = dedl_auth_class
+        self.token_validator = token_validator
 
     def get_token(self):
         """Performs the full authentication flow to retrieve a DEDL token."""
+
+        if self.dedl_access_token and self.token_validator(self.dedl_access_token):
+            return self.dedl_access_token
 
         # Get DESP auth token
         desp_auth = self.desp_auth_class(self.username, self.password)
