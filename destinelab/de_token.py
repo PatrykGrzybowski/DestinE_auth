@@ -29,6 +29,7 @@ class AuthHandler:
         :param password: DESP password
         :param desp_auth_class: Class to use for DESP authentication (default: DESPAuth)
         :param dedl_auth_class: Class to use for DEDL authentication (default: DEDLAuth)
+        :param token_validator: Function to validate DEDL tokens (default: is_dedl_token_valid)
         """
         self.username = username
         self.password = password

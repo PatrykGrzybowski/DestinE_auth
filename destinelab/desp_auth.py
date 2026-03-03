@@ -69,11 +69,17 @@ class DESPAuth:
         Checks if the HTML tree contains an OTP input form.
         Testable in isolation to verify that the correct heuristics are being applied to detect OTP forms based on common input field attributes.
 
+        Answers the question: Does the provided HTML tree contain an OTP form based on common input field attributes that indicate OTP requirement?
+
         :param tree: The parsed HTML tree
         :return: True if an OTP form is detected, False otherwise
         """
         otp_keywords = ["otp", "one-time password", "verification code"]
         for keyword in otp_keywords:
+
+            # Note: Need a case-insensitive search for OTP-related keywords in the input field attributes to make this more robust against variations in the identity provider's implementation.
+            # XPath 1.0 does not support case-insensitive contains, so we use translate to convert attributes to lowercase for comparison. 
+            # We check common attributes like name, id, placeholder, and type for indicators of OTP fields.
             if tree.xpath(
                 f"//input[contains(translate(@name, 'ABCDEFGHIJKLMNOPQRSTUVWXYZ', 'abcdefghijklmnopqrstuvwxyz'), '{keyword}') "
                 f"or contains(translate(@id, 'ABCDEFGHIJKLMNOPQRSTUVWXYZ', 'abcdefghijklmnopqrstuvwxyz'), '{keyword}') "
