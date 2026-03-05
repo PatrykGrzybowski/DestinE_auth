@@ -18,9 +18,7 @@ Note: Python compatibility: 3.8+
 
 ## Quick usage
 
-Repository demo and contributor workflows (including the interactive demo script) are documented in `README_DEVELOPMENT.md`.
-
-### Standard usage
+- Here's a quick example of how to use the `AuthHandler` to get a DEDL token using DESP credentials. This is the recommended approach for most users, as it handles caching and token refresh automatically.
 
 ```python
 from destinelab import AuthHandler
