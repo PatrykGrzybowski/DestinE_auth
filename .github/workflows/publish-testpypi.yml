@@ -4,7 +4,6 @@ on:
   push:
     tags:
       - "v*-rc*"
-      - "rc-*"
 
 jobs:
   test-matrix:

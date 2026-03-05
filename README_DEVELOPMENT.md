@@ -110,12 +110,12 @@ For each retrieved DEDL token, the script prints expiry, roles, and DT access st
 
 ## CI and release flow
 
-- `CI` workflow runs on every push and pull request.
+- `CI` workflow runs on every branch push and pull request.
 - Unit tests run on Python `3.8`, `3.9`, `3.10`, `3.11`, and `3.12`.
 - Static analysis runs in CI on Python `3.12` with `ruff` and `mypy`.
 - Build checks verify artifact metadata with `twine check`.
-- Tags matching `test-*` or `rc-*` publish to TestPyPI.
-- Tags matching `v*` publish to production PyPI.
+- Tags matching `v*-rc*` publish to TestPyPI.
+- Tags matching `v*` run the production release workflow
 
 Required repository secrets:
 
