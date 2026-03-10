@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 import json
+import logging
 import os
 import re
 from datetime import datetime, timezone
@@ -9,8 +10,9 @@ from typing import Optional
 import jwt
 from dotenv import load_dotenv
 
-from destinelab import AuthHandler, DEDLAuth, DEDLServiceAccountAuth, DESPAuth
+from destinelab import AuthHandler, DEDLAuth, DEDLServiceAccountAuth, DESPAuth, configure_logging
 
+configure_logging(level=logging.DEBUG)
 load_dotenv()  # loads .env into os.environ
 
 
