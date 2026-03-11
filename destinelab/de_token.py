@@ -94,3 +94,28 @@ class AuthHandler:
         logger.debug("DT output access check result: %s", is_allowed)
 
         return is_allowed
+    
+
+    def get_decoded_token(self, token):
+        """
+        Useful function for debugging and support.
+        Token is provided as an argument which can be helpful for troubleshooting token-related issues.
+        JWT Tokens are encoded not encrypted, this is normally not a security risk as long as the token is handled securely and not exposed to unauthorized parties.
+
+        :param token: DEDL or DESP JWT token
+        :return: Decoded token as a dictionary or raises ValueError if the token is invalid or not available.
+        """
+
+        if token:
+
+            try:
+                decoded_token = jwt.decode(token, options={"verify_signature": False})
+                logger.debug("Decoded token successfully: %s", decoded_token)
+                return decoded_token
+            
+            except (jwt.PyJWTError, TypeError, ValueError):
+                raise ValueError("Failed to decode token. The token may be invalid or malformed.")
+        
+        else:
+            raise ValueError("No token provided to decode.")
+

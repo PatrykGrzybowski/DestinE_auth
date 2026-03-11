@@ -193,6 +193,10 @@ def run_standard_authentication(
 
     _print_banner("END: Running standard authentication flow")
 
+    # Demonstrate get_decoded_token utility method on the handler, which can be used outside of the main flow to decode any token (e.g. for debugging or inspection purposes)
+    decoded_desp_access_token = handler.get_decoded_token(handler.desp_access_token) 
+    print(f"Decoded DESP access token using AuthHandler utility method: {json.dumps(decoded_desp_access_token, indent=2, sort_keys=True)}")
+
 
 def run_staged_authentication(
     username: str,
