@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "destinelab"
-version = "1.14-rc3"
+version = "1.14rc4"
 description = "Destinelab Python package"
 readme = { file = "README.md", content-type = "text/markdown" }
 requires-python = ">=3.8"
