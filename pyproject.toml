@@ -1,0 +1,79 @@
+[build-system]
+requires = ["setuptools>=68", "wheel", "build"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "destinelab"
+version = "1.14"
+description = "Destinelab Python package"
+readme = { file = "README.md", content-type = "text/markdown" }
+requires-python = ">=3.8"
+license = { text = "MIT" }
+
+classifiers = [
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.8",
+  "Programming Language :: Python :: 3.9",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "License :: OSI Approved :: MIT License",
+  "Operating System :: OS Independent",
+]
+
+dependencies = [
+  "requests",
+  "lxml",
+  "PyJWT",
+  "python-keycloak",
+]
+
+[project.optional-dependencies]
+dev = [
+  "python-dotenv", 
+  "ruff", 
+  "black", 
+  "mypy", 
+  "types-requests",
+  "setuptools>=68",
+]
+
+[tool.setuptools.packages.find]
+where = ["."]
+exclude = [
+  "tests*",
+  ".github*",
+  "tokens*"
+]
+
+[tool.ruff]
+target-version = "py38"
+line-length = 100
+exclude = [
+  "dist",
+  "build",
+  "destinelab.egg-info",
+  "tokens",
+]
+
+[tool.ruff.lint]
+select = ["E", "F", "I"]
+ignore = ["E501"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["destinelab"]
+
+[tool.mypy]
+python_version = "3.9"
+files = ["destinelab"]
+exclude = [
+  "^tests/",
+  "^tokens/",
+]
+ignore_missing_imports = true
+warn_unused_ignores = true
+warn_redundant_casts = true
+warn_return_any = true
+strict_equality = true
+check_untyped_defs = true
+pretty = true
