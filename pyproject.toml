@@ -28,6 +28,9 @@ dependencies = [
   "python-keycloak",
 ]
 
+[project.urls]
+Homepage = "https://github.com/PatrykGrzybowski/DestinE_auth"
+
 [project.optional-dependencies]
 dev = [
   "python-dotenv", 
